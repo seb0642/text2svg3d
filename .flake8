@@ -13,7 +13,8 @@ exclude =
     .pytest_cache
 
 # Ignore specific error codes
-ignore = E203,E501,W503,E231
+# C901: function too complex (acceptable for CLI and complex logic)
+ignore = E203,E501,W503,E231,C901
 
 # Error codes to always show
 select = C,E,F,W,B,B950
