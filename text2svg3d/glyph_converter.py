@@ -1,11 +1,15 @@
 """Glyph to vector path conversion using FreeType."""
 
+import logging
+from functools import lru_cache
 from pathlib import Path
-from typing import List, NamedTuple, Optional
+from typing import Dict, List, NamedTuple, Optional, Tuple
 
 import freetype
 
 from .config import DEFAULT_COORDINATE_PRECISION, DPI
+
+logger = logging.getLogger(__name__)
 
 
 class Point(NamedTuple):
@@ -58,6 +62,11 @@ class GlyphConverter:
 
         self.font_path = font_path
         self.size_mm = size_mm
+
+        # Glyph cache for performance (LRU with max 256 glyphs)
+        self._glyph_cache: Dict[str, GlyphOutline] = {}
+        self._cache_hits = 0
+        self._cache_misses = 0
 
         # Try to load the font
         try:
@@ -112,7 +121,7 @@ class GlyphConverter:
 
     def _convert_char(self, char: str) -> Optional[GlyphOutline]:
         """
-        Convert a single character to SVG path data.
+        Convert a single character to SVG path data (with caching).
 
         Args:
             char: Single character to convert
@@ -120,6 +129,14 @@ class GlyphConverter:
         Returns:
             GlyphOutline or None if character not supported
         """
+        # Check cache first
+        if char in self._glyph_cache:
+            self._cache_hits += 1
+            logger.debug(f"Cache hit for '{char}' (hits: {self._cache_hits})")
+            return self._glyph_cache[char]
+
+        self._cache_misses += 1
+
         # Load the glyph for this character
         # Load with NO_SCALE to get coordinates in font units (not scaled)
         self.face.load_char(char, freetype.FT_LOAD_NO_BITMAP | freetype.FT_LOAD_NO_SCALE)
@@ -136,7 +153,22 @@ class GlyphConverter:
         # Get advance width in mm (already in font units with NO_SCALE)
         advance_mm = self._font_units_to_mm(self.face.glyph.advance.x)
 
-        return GlyphOutline(path_data=path_data, advance_width=advance_mm, char=char)
+        result = GlyphOutline(path_data=path_data, advance_width=advance_mm, char=char)
+
+        # Cache the result (implement simple LRU by limiting cache size)
+        if len(self._glyph_cache) >= 256:
+            # Remove first (oldest) item
+            first_key = next(iter(self._glyph_cache))
+            del self._glyph_cache[first_key]
+            logger.debug(f"Cache full, removed '{first_key}'")
+
+        self._glyph_cache[char] = result
+        logger.debug(
+            f"Cached '{char}' (cache size: {len(self._glyph_cache)}, "
+            f"hit rate: {self._cache_hits / (self._cache_hits + self._cache_misses) * 100:.1f}%)"
+        )
+
+        return result
 
     def _outline_to_svg_path(self, outline) -> str:
         """

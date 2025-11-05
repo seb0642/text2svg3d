@@ -6,7 +6,13 @@ from pathlib import Path
 from tkinter import filedialog
 from typing import Optional
 
-from ..config import DEFAULT_LETTER_SPACING_MM, DEFAULT_OUTPUT_DIR, DEFAULT_SIZE_MM
+from ..config import (
+    DEFAULT_LETTER_SPACING_MM,
+    DEFAULT_OUTPUT_DIR,
+    DEFAULT_SIZE_MM,
+    load_theme_preference,
+    save_theme_preference,
+)
 from ..font_manager import FontManager
 from .design_system import ICONS, Theme, get_font, get_spacing
 from .file_operations import FileOperations
@@ -33,8 +39,10 @@ class ModernText2SVG3DWindow:
         self.root.geometry("900x800")
         self.root.resizable(True, True)
 
-        # Theme
-        self.theme = Theme(mode="light")
+        # Theme - load user preference
+        saved_theme = load_theme_preference()
+        self.theme = Theme(mode=saved_theme)
+        logger.info(f"Loaded theme preference: {saved_theme}")
 
         # Initialize managers
         self.font_manager = FontManager(use_cache=True)
@@ -87,6 +95,8 @@ class ModernText2SVG3DWindow:
         """Handle theme change."""
         self.root.configure(bg=self.theme.get_color("background"))
         logger.info(f"Theme changed to: {mode}")
+        # Save preference
+        save_theme_preference(mode)
 
     def _create_modern_layout(self) -> None:
         """Create modern layout with cards and sections."""
@@ -465,6 +475,7 @@ class ModernText2SVG3DWindow:
 
     def _bind_events(self) -> None:
         """Bind event handlers."""
+        # Variable traces
         self.filter_var.trace("w", self._on_filter_changed)
         self.text_var.trace("w", self._update_preview)
         self.text_var.trace("w", self._update_visual_preview)
@@ -474,6 +485,20 @@ class ModernText2SVG3DWindow:
         self.size_var.trace("w", self._update_visual_preview)
         self.spacing_var.trace("w", self._update_preview)
         self.spacing_var.trace("w", self._update_visual_preview)
+
+        # Keyboard shortcuts
+        self.root.bind("<Control-g>", lambda e: self._generate_svg())
+        self.root.bind("<Control-G>", lambda e: self._generate_svg())
+        self.root.bind("<Control-t>", lambda e: self.theme.toggle())
+        self.root.bind("<Control-T>", lambda e: self.theme.toggle())
+        self.root.bind("<Control-q>", lambda e: self.root.quit())
+        self.root.bind("<Control-Q>", lambda e: self.root.quit())
+        self.root.bind("<Control-o>", lambda e: self._open_output_folder())
+        self.root.bind("<Control-O>", lambda e: self._open_output_folder())
+        self.root.bind("<Control-r>", lambda e: self._refresh_fonts())
+        self.root.bind("<Control-R>", lambda e: self._refresh_fonts())
+        self.root.bind("<F1>", lambda e: self._show_shortcuts_help())
+        logger.info("Keyboard shortcuts activated")
 
     # Rest of the methods remain similar to original but with modern styling
     # (Abbreviated for space - these would be the same logic as original)
@@ -603,6 +628,44 @@ class ModernText2SVG3DWindow:
             if self.progress_indicator:
                 self.progress_indicator.stop()
                 self.progress_indicator.pack_forget()
+
+    def _open_output_folder(self) -> None:
+        """Open output folder in file manager."""
+        import platform
+        import subprocess
+
+        output_dir = Path(DEFAULT_OUTPUT_DIR)
+        if not output_dir.exists():
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+        try:
+            if platform.system() == "Windows":
+                subprocess.run(["explorer", str(output_dir)])
+            elif platform.system() == "Darwin":  # macOS
+                subprocess.run(["open", str(output_dir)])
+            else:  # Linux and others
+                subprocess.run(["xdg-open", str(output_dir)])
+            logger.info(f"Opened output folder: {output_dir}")
+        except Exception as e:
+            logger.error(f"Failed to open output folder: {e}")
+            show_error(
+                self.root,
+                "Erreur",
+                f"Impossible d'ouvrir le dossier :\n{output_dir}\n\nErreur: {e}",
+            )
+
+    def _show_shortcuts_help(self) -> None:
+        """Show keyboard shortcuts help dialog."""
+        shortcuts = f"""{ICONS['info']} Raccourcis Clavier
+
+{ICONS['generate']} Ctrl+G : Générer le SVG
+{ICONS['3d']} Ctrl+T : Basculer thème clair/sombre
+{ICONS['folder']} Ctrl+O : Ouvrir le dossier de sortie
+{ICONS['refresh']} Ctrl+R : Rafraîchir la liste des polices
+{ICONS['close']} Ctrl+Q : Quitter l'application
+{ICONS['info']} F1 : Afficher cette aide
+"""
+        show_info(self.root, "Aide - Raccourcis Clavier", shortcuts)
 
 
 def main() -> None:

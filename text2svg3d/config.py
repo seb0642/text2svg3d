@@ -1,7 +1,11 @@
 """Configuration and constants for text2svg3d."""
 
+import json
+import logging
 from pathlib import Path
 from typing import List
+
+logger = logging.getLogger(__name__)
 
 # Default values
 DEFAULT_SIZE_MM: float = 20.0
@@ -46,3 +50,110 @@ DPI: int = 72
 
 # Cache file for font list (optional, for performance)
 CACHE_FILE: Path = Path.home() / ".cache" / "text2svg3d" / "fonts.cache"
+
+# User preferences directory
+PREFERENCES_DIR: Path = Path.home() / ".config" / "text2svg3d"
+THEME_PREF_FILE: Path = PREFERENCES_DIR / "theme.json"
+HISTORY_FILE: Path = PREFERENCES_DIR / "history.json"
+
+
+# Theme preference functions
+def save_theme_preference(mode: str) -> None:
+    """
+    Save theme preference to user config.
+
+    Args:
+        mode: Theme mode ("light" or "dark")
+    """
+    try:
+        PREFERENCES_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
+        with open(THEME_PREF_FILE, "w") as f:
+            json.dump({"theme": mode, "version": "1.0"}, f, indent=2)
+        logger.debug(f"Theme preference saved: {mode}")
+    except (OSError, IOError, PermissionError) as e:
+        logger.warning(f"Failed to save theme preference: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error saving theme preference: {e}")
+
+
+def load_theme_preference() -> str:
+    """
+    Load theme preference from user config.
+
+    Returns:
+        Theme mode ("light" or "dark"), defaults to "light"
+    """
+    try:
+        if THEME_PREF_FILE.exists():
+            with open(THEME_PREF_FILE, "r") as f:
+                data = json.load(f)
+                theme = data.get("theme", "light")
+                if theme in ("light", "dark"):
+                    logger.debug(f"Theme preference loaded: {theme}")
+                    return theme
+    except (OSError, IOError, PermissionError) as e:
+        logger.debug(f"Failed to load theme preference: {e}")
+    except json.JSONDecodeError as e:
+        logger.warning(f"Corrupt theme preference file: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error loading theme preference: {e}")
+
+    # Default to light theme
+    return "light"
+
+
+# History functions
+def save_generation_history(entry: dict) -> None:
+    """
+    Save a generation entry to history.
+
+    Args:
+        entry: Dictionary with generation parameters and result
+    """
+    try:
+        PREFERENCES_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
+
+        # Load existing history
+        history = []
+        if HISTORY_FILE.exists():
+            with open(HISTORY_FILE, "r") as f:
+                data = json.load(f)
+                history = data.get("entries", [])
+
+        # Add new entry (limit to last 50)
+        history.insert(0, entry)
+        history = history[:50]
+
+        # Save updated history
+        with open(HISTORY_FILE, "w") as f:
+            json.dump({"version": "1.0", "entries": history}, f, indent=2)
+
+        logger.debug(f"Generation history entry saved")
+    except (OSError, IOError, PermissionError) as e:
+        logger.warning(f"Failed to save generation history: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error saving generation history: {e}")
+
+
+def load_generation_history() -> List[dict]:
+    """
+    Load generation history.
+
+    Returns:
+        List of generation history entries
+    """
+    try:
+        if HISTORY_FILE.exists():
+            with open(HISTORY_FILE, "r") as f:
+                data = json.load(f)
+                entries = data.get("entries", [])
+                logger.debug(f"Loaded {len(entries)} history entries")
+                return entries
+    except (OSError, IOError, PermissionError) as e:
+        logger.debug(f"Failed to load generation history: {e}")
+    except json.JSONDecodeError as e:
+        logger.warning(f"Corrupt history file: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error loading generation history: {e}")
+
+    return []
