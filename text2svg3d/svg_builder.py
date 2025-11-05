@@ -8,7 +8,7 @@ from xml.parsers.expat import ExpatError
 
 import svgwrite
 
-from .config import SVG_NAMESPACE, SVG_UNITS
+from .config import SVG_UNITS
 from .glyph_converter import GlyphOutline
 
 # Setup logging
@@ -327,8 +327,8 @@ class SVGBuilder:
             with open(output_path, "r") as f:
                 content = f.read()
 
-            # Parse with minidom for pretty printing
-            dom = minidom.parseString(content)
+            # Parse with minidom for pretty printing (our own generated SVG)
+            dom = minidom.parseString(content)  # nosec B318
 
             # Write back with proper formatting
             with open(output_path, "w") as f:
@@ -336,7 +336,7 @@ class SVGBuilder:
 
             logger.debug(f"Post-processed SVG file: {output_path}")
 
-        except (OSError, IOError, PermissionError) as e:
+        except OSError as e:
             # File errors - log but keep original
             logger.warning(f"Failed to post-process SVG {output_path}: {e}")
         except ExpatError as e:

@@ -70,7 +70,7 @@ def save_theme_preference(mode: str) -> None:
         with open(THEME_PREF_FILE, "w") as f:
             json.dump({"theme": mode, "version": "1.0"}, f, indent=2)
         logger.debug(f"Theme preference saved: {mode}")
-    except (OSError, IOError, PermissionError) as e:
+    except OSError as e:
         logger.warning(f"Failed to save theme preference: {e}")
     except Exception as e:
         logger.error(f"Unexpected error saving theme preference: {e}")
@@ -91,7 +91,7 @@ def load_theme_preference() -> str:
                 if theme in ("light", "dark"):
                     logger.debug(f"Theme preference loaded: {theme}")
                     return theme
-    except (OSError, IOError, PermissionError) as e:
+    except OSError as e:
         logger.debug(f"Failed to load theme preference: {e}")
     except json.JSONDecodeError as e:
         logger.warning(f"Corrupt theme preference file: {e}")
@@ -129,7 +129,7 @@ def save_generation_history(entry: dict) -> None:
             json.dump({"version": "1.0", "entries": history}, f, indent=2)
 
         logger.debug("Generation history entry saved")
-    except (OSError, IOError, PermissionError) as e:
+    except OSError as e:
         logger.warning(f"Failed to save generation history: {e}")
     except Exception as e:
         logger.error(f"Unexpected error saving generation history: {e}")
@@ -149,7 +149,7 @@ def load_generation_history() -> List[dict]:
                 entries = data.get("entries", [])
                 logger.debug(f"Loaded {len(entries)} history entries")
                 return entries
-    except (OSError, IOError, PermissionError) as e:
+    except OSError as e:
         logger.debug(f"Failed to load generation history: {e}")
     except json.JSONDecodeError as e:
         logger.warning(f"Corrupt history file: {e}")
@@ -178,7 +178,7 @@ def save_language_preference(language: str) -> None:
             json.dump({"language": language, "version": "1.0"}, f, indent=2)
 
         logger.debug(f"Language preference saved: {language}")
-    except (OSError, IOError, PermissionError) as e:
+    except OSError as e:
         logger.warning(f"Failed to save language preference: {e}")
     except Exception as e:
         logger.error(f"Unexpected error saving language preference: {e}")
@@ -198,7 +198,7 @@ def load_language_preference() -> str:
                 language = data.get("language", "fr_FR")
                 logger.debug(f"Loaded language preference: {language}")
                 return language
-    except (OSError, IOError, PermissionError) as e:
+    except OSError as e:
         logger.debug(f"Failed to load language preference: {e}")
     except json.JSONDecodeError as e:
         logger.warning(f"Corrupt language preference file: {e}")

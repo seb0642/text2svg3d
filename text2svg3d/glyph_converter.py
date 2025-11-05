@@ -1,9 +1,8 @@
 """Glyph to vector path conversion using FreeType."""
 
 import logging
-from functools import lru_cache
 from pathlib import Path
-from typing import Dict, List, NamedTuple, Optional, Tuple
+from typing import Dict, List, NamedTuple, Optional
 
 import freetype
 
@@ -219,7 +218,8 @@ class GlyphConverter:
         # Start point
         start_point = self._point_to_mm(points[0])
         path_commands.append(
-            f"M {start_point.x:.{DEFAULT_COORDINATE_PRECISION}f} {start_point.y:.{DEFAULT_COORDINATE_PRECISION}f}"
+            f"M {start_point.x:.{DEFAULT_COORDINATE_PRECISION}f} "
+            f"{start_point.y:.{DEFAULT_COORDINATE_PRECISION}f}"
         )
 
         i = 1
@@ -229,7 +229,8 @@ class GlyphConverter:
             if tag & 1:  # On-curve point
                 pt = self._point_to_mm(points[i])
                 path_commands.append(
-                    f"L {pt.x:.{DEFAULT_COORDINATE_PRECISION}f} {pt.y:.{DEFAULT_COORDINATE_PRECISION}f}"
+                    f"L {pt.x:.{DEFAULT_COORDINATE_PRECISION}f} "
+                    f"{pt.y:.{DEFAULT_COORDINATE_PRECISION}f}"
                 )
                 i += 1
             else:  # Off-curve point (control point)
@@ -244,8 +245,10 @@ class GlyphConverter:
                     mid_y = (cp1.y + cp2.y) / 2
 
                     path_commands.append(
-                        f"Q {cp1.x:.{DEFAULT_COORDINATE_PRECISION}f} {cp1.y:.{DEFAULT_COORDINATE_PRECISION}f} "
-                        f"{mid_x:.{DEFAULT_COORDINATE_PRECISION}f} {mid_y:.{DEFAULT_COORDINATE_PRECISION}f}"
+                        f"Q {cp1.x:.{DEFAULT_COORDINATE_PRECISION}f} "
+                        f"{cp1.y:.{DEFAULT_COORDINATE_PRECISION}f} "
+                        f"{mid_x:.{DEFAULT_COORDINATE_PRECISION}f} "
+                        f"{mid_y:.{DEFAULT_COORDINATE_PRECISION}f}"
                     )
                     i += 1
                 elif i + 1 < n:
@@ -254,16 +257,20 @@ class GlyphConverter:
                     end_pt = self._point_to_mm(points[i + 1])
 
                     path_commands.append(
-                        f"Q {cp.x:.{DEFAULT_COORDINATE_PRECISION}f} {cp.y:.{DEFAULT_COORDINATE_PRECISION}f} "
-                        f"{end_pt.x:.{DEFAULT_COORDINATE_PRECISION}f} {end_pt.y:.{DEFAULT_COORDINATE_PRECISION}f}"
+                        f"Q {cp.x:.{DEFAULT_COORDINATE_PRECISION}f} "
+                        f"{cp.y:.{DEFAULT_COORDINATE_PRECISION}f} "
+                        f"{end_pt.x:.{DEFAULT_COORDINATE_PRECISION}f} "
+                        f"{end_pt.y:.{DEFAULT_COORDINATE_PRECISION}f}"
                     )
                     i += 2
                 else:
                     # Last point is control point, curve back to start
                     cp = self._point_to_mm(points[i])
                     path_commands.append(
-                        f"Q {cp.x:.{DEFAULT_COORDINATE_PRECISION}f} {cp.y:.{DEFAULT_COORDINATE_PRECISION}f} "
-                        f"{start_point.x:.{DEFAULT_COORDINATE_PRECISION}f} {start_point.y:.{DEFAULT_COORDINATE_PRECISION}f}"
+                        f"Q {cp.x:.{DEFAULT_COORDINATE_PRECISION}f} "
+                        f"{cp.y:.{DEFAULT_COORDINATE_PRECISION}f} "
+                        f"{start_point.x:.{DEFAULT_COORDINATE_PRECISION}f} "
+                        f"{start_point.y:.{DEFAULT_COORDINATE_PRECISION}f}"
                     )
                     i += 1
 

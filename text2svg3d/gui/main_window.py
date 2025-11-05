@@ -6,22 +6,11 @@ from pathlib import Path
 from tkinter import filedialog, ttk
 from typing import Optional
 
-from ..config import (
-    DEFAULT_LETTER_SPACING_MM,
-    DEFAULT_OUTPUT_DIR,
-    DEFAULT_SIZE_MM,
-)
+from ..config import DEFAULT_LETTER_SPACING_MM, DEFAULT_OUTPUT_DIR, DEFAULT_SIZE_MM
 from ..font_manager import FontManager
 from .file_operations import FileOperations
 from .preview import DimensionsPreview, VisualPreview
-from .widgets import (
-    LabeledScale,
-    StatusBar,
-    ask_yes_no,
-    show_error,
-    show_info,
-    show_warning,
-)
+from .widgets import LabeledScale, StatusBar, ask_yes_no, show_error, show_info, show_warning
 
 logger = logging.getLogger(__name__)
 
@@ -511,7 +500,7 @@ def main() -> None:
     root = tk.Tk()
 
     # Create application
-    app = Text2SVG3DWindow(root)
+    _app = Text2SVG3DWindow(root)  # noqa: F841
 
     # Center window
     root.update_idletasks()

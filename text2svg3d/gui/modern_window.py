@@ -20,13 +20,7 @@ from ..font_manager import FontManager
 from ..i18n import _, setup_i18n
 from .design_system import ICONS, Theme, get_font, get_spacing
 from .file_operations import FileOperations
-from .modern_widgets import (
-    ModernButton,
-    ModernCard,
-    ModernEntry,
-    ProgressIndicator,
-    ThemeToggle,
-)
+from .modern_widgets import ModernButton, ModernCard, ModernEntry, ProgressIndicator, ThemeToggle
 from .preview import DimensionsPreview, VisualPreview
 from .widgets import show_error, show_info
 

@@ -98,7 +98,7 @@ def convert_text_command(args: argparse.Namespace) -> int:
 
         if not outlines:
             print(
-                f"Error: No characters could be converted. Font may not support these characters."
+                "Error: No characters could be converted. Font may not support these characters."
             )
             return 1
 
@@ -109,7 +109,7 @@ def convert_text_command(args: argparse.Namespace) -> int:
         width, height = converter.get_text_dimensions(text, args.letter_spacing)
 
         if args.preview:
-            print(f"\nSVG Dimensions:")
+            print("\nSVG Dimensions:")
             print(f"  Width:  {width:.2f}mm")
             print(f"  Height: {height:.2f}mm")
             print(f"  Suggested thickness: {args.thickness}mm")

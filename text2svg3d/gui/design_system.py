@@ -1,6 +1,6 @@
 """Modern design system for text2svg3d GUI."""
 
-from typing import Dict, Tuple
+from typing import Tuple
 
 # Color Palette - Modern & Professional
 COLORS = {

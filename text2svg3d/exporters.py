@@ -88,7 +88,6 @@ def export_to_png(
 
         # Fallback to Pillow + svglib
         try:
-            from PIL import Image
             from reportlab.graphics import renderPM
             from svglib.svglib import svg2rlg
 
@@ -103,7 +102,8 @@ def export_to_png(
         except ImportError:
             return (
                 False,
-                "Export PNG non disponible. Installez: pip install cairosvg ou pip install svglib reportlab pillow",
+                "Export PNG non disponible. Installez: pip install cairosvg ou "
+                "pip install svglib reportlab pillow",
             )
 
     except Exception as e:
@@ -129,11 +129,12 @@ def export_to_dxf(svg_path: Path, dxf_path: Optional[Path] = None) -> Tuple[bool
         dxf_path = svg_path.with_suffix(".dxf")
 
     try:
-        import ezdxf
         from xml.etree import ElementTree as ET
 
-        # Parse SVG
-        tree = ET.parse(str(svg_path))
+        import ezdxf
+
+        # Parse SVG (our own generated file, not untrusted data)
+        tree = ET.parse(str(svg_path))  # nosec B314
         root = tree.getroot()
 
         # Create DXF document
@@ -224,13 +225,13 @@ def get_available_exporters() -> dict:
 
     # Check PDF
     try:
-        import cairosvg
+        import cairosvg  # noqa: F401
 
         available["pdf"] = True
     except ImportError:
         try:
-            from svglib.svglib import svg2rlg
-            from reportlab.graphics import renderPDF
+            from reportlab.graphics import renderPDF  # noqa: F401
+            from svglib.svglib import svg2rlg  # noqa: F401
 
             available["pdf"] = True
         except ImportError:
@@ -238,14 +239,14 @@ def get_available_exporters() -> dict:
 
     # Check PNG
     try:
-        import cairosvg
+        import cairosvg  # noqa: F401,F811
 
         available["png"] = True
     except ImportError:
         try:
-            from svglib.svglib import svg2rlg
-            from reportlab.graphics import renderPM
-            from PIL import Image
+            from PIL import Image  # noqa: F401
+            from reportlab.graphics import renderPM  # noqa: F401
+            from svglib.svglib import svg2rlg  # noqa: F401,F811
 
             available["png"] = True
         except ImportError:
@@ -253,7 +254,7 @@ def get_available_exporters() -> dict:
 
     # Check DXF
     try:
-        import ezdxf
+        import ezdxf  # noqa: F401
 
         available["dxf"] = True
     except ImportError:

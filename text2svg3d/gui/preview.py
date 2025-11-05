@@ -3,7 +3,6 @@
 import logging
 import tkinter as tk
 from tkinter import font as tkfont
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 

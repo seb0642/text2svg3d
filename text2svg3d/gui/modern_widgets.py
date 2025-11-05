@@ -1,10 +1,9 @@
 """Modern styled widgets with theming support."""
 
 import tkinter as tk
-from tkinter import ttk
 from typing import Callable, Optional
 
-from .design_system import ICONS, Theme, get_color, get_font, get_radius, get_spacing
+from .design_system import ICONS, Theme, get_font, get_radius, get_spacing
 
 
 class ModernButton(tk.Canvas):

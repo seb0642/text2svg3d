@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 from ..config import DEFAULT_OUTPUT_DIR, DEFAULT_THICKNESS_MM
 from ..font_manager import FontManager

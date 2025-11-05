@@ -54,7 +54,7 @@ class FontManager:
                             if family_name not in self.fonts:
                                 self.fonts[family_name] = font_path
                                 logger.debug(f"Found font: {family_name} at {font_path}")
-                    except (TTLibError, OSError, PermissionError) as e:
+                    except (TTLibError, OSError) as e:
                         # Skip fonts that can't be read (corrupt, no permission, etc.)
                         logger.debug(f"Failed to read font {font_path}: {e}")
                         continue
@@ -104,7 +104,7 @@ class FontManager:
             with open(CACHE_FILE, "w") as f:
                 json.dump(cache_data, f, indent=2)
             logger.debug(f"Font cache saved to {CACHE_FILE}")
-        except (OSError, IOError, PermissionError) as e:
+        except OSError as e:
             # Cache is optional, log but don't fail
             logger.warning(f"Failed to save font cache: {e}")
         except Exception as e:
@@ -140,7 +140,7 @@ class FontManager:
             logger.warning("Invalid cache format, rescanning fonts")
             self._scan_system_fonts()
 
-        except (OSError, IOError, PermissionError) as e:
+        except OSError as e:
             logger.warning(f"Failed to load font cache: {e}, rescanning fonts")
             self._scan_system_fonts()
         except json.JSONDecodeError as e:
@@ -215,7 +215,7 @@ class FontManager:
             if CACHE_FILE.exists():
                 CACHE_FILE.unlink()
                 logger.info("Font cache cleared")
-        except (OSError, PermissionError) as e:
+        except OSError as e:
             logger.error(f"Failed to clear font cache: {e}")
             raise
         except Exception as e:
