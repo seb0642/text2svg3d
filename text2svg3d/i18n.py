@@ -50,15 +50,23 @@ def setup_i18n(language: str = None) -> None:
 
         except FileNotFoundError:
             # Fallback to French (default)
-            logger.warning(
-                f"Translation file not found for {language}, " f"using French (default)"
-            )
-            _translate = lambda s: s  # No translation needed, source is French
+            logger.warning(f"Translation file not found for {language}, " f"using French (default)")
+            # No translation needed, source is French
+
+            def _no_translate(s: str) -> str:
+                return s
+
+            _translate = _no_translate
 
     except Exception as e:
         # Use repr() to avoid encoding issues in error messages
         logger.error(f"Failed to setup i18n: {repr(e)}")
-        _translate = lambda s: s  # Fallback
+        # Fallback to no translation
+
+        def _fallback_translate(s: str) -> str:
+            return s
+
+        _translate = _fallback_translate
 
 
 def _(message: str) -> str:

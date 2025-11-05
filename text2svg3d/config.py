@@ -128,7 +128,7 @@ def save_generation_history(entry: dict) -> None:
         with open(HISTORY_FILE, "w") as f:
             json.dump({"version": "1.0", "entries": history}, f, indent=2)
 
-        logger.debug(f"Generation history entry saved")
+        logger.debug("Generation history entry saved")
     except (OSError, IOError, PermissionError) as e:
         logger.warning(f"Failed to save generation history: {e}")
     except Exception as e:

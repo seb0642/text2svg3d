@@ -11,11 +11,9 @@ from ..config import (
     DEFAULT_LETTER_SPACING_MM,
     DEFAULT_OUTPUT_DIR,
     DEFAULT_SIZE_MM,
-    load_generation_history,
     load_language_preference,
     load_theme_preference,
     save_generation_history,
-    save_language_preference,
     save_theme_preference,
 )
 from ..font_manager import FontManager
@@ -283,7 +281,9 @@ class ModernText2SVG3DWindow:
 
     def _create_font_selection_card(self, parent: tk.Frame) -> None:
         """Create font selection card."""
-        card = ModernCard(parent, self.theme, title=f"{ICONS['font']} {_('Sélection de la police')}")
+        card = ModernCard(
+            parent, self.theme, title=f"{ICONS['font']} {_('Sélection de la police')}"
+        )
         card.pack(fill=tk.X, pady=(0, get_spacing("md")))
 
         content = tk.Frame(card, bg=self.theme.get_color("surface"))
@@ -291,7 +291,10 @@ class ModernText2SVG3DWindow:
 
         # Filter entry
         filter_entry = ModernEntry(
-            content, self.theme, f"{ICONS['search']} {_('Rechercher une police...')}", self.filter_var
+            content,
+            self.theme,
+            f"{ICONS['search']} {_('Rechercher une police...')}",
+            self.filter_var,
         )
         filter_entry.pack(fill=tk.X, pady=(0, get_spacing("sm")))
 
@@ -684,12 +687,14 @@ class ModernText2SVG3DWindow:
             )
 
             # Schedule UI update on main thread
-            self.root.after(0, lambda: self._on_generate_complete(success, files, error))
+            self.root.after(
+                0, lambda s=success, f=files, err=error: self._on_generate_complete(s, f, err)
+            )
 
-        except Exception as e:
-            logger.error(f"Generation failed: {e}")
+        except Exception as exc:
+            logger.error(f"Generation failed: {exc}")
             # Schedule error handling on main thread
-            self.root.after(0, lambda: self._on_generate_complete(False, [], str(e)))
+            self.root.after(0, lambda ex=exc: self._on_generate_complete(False, [], str(ex)))
 
     def _on_generate_complete(self, success: bool, files: list, error: str) -> None:
         """Handle generation completion (called on main thread)."""
@@ -751,21 +756,26 @@ class ModernText2SVG3DWindow:
             logger.info(f"Opened output folder: {output_dir}")
         except Exception as e:
             logger.error(f"Failed to open output folder: {e}")
+            # Pre-translate to avoid backslash in f-string
+            error_msg = _("Impossible d'ouvrir le dossier")
+            error_label = _("Erreur")
             show_error(
                 self.root,
-                _("Erreur"),
-                f"{_('Impossible d'ouvrir le dossier')} :\n{output_dir}\n\n{_('Erreur')}: {e}",
+                error_label,
+                f"{error_msg} :\n{output_dir}\n\n{error_label}: {e}",
             )
 
     def _show_shortcuts_help(self) -> None:
         """Show keyboard shortcuts help dialog."""
+        # Pre-translate strings to avoid backslash in f-string
+        quit_app = _("Quitter l'application")
         shortcuts = f"""{ICONS['info']} {_('Raccourcis Clavier')}
 
 {ICONS['generate']} Ctrl+G : {_('Générer le SVG')}
 {ICONS['3d']} Ctrl+T : {_('Basculer thème clair/sombre')}
 {ICONS['folder']} Ctrl+O : {_('Ouvrir le dossier de sortie')}
 {ICONS['refresh']} Ctrl+R : {_('Rafraîchir la liste des polices')}
-{ICONS['close']} Ctrl+Q : {_('Quitter l\'application')}
+{ICONS['close']} Ctrl+Q : {quit_app}
 {ICONS['info']} F1 : {_('Afficher cette aide')}
 """
         show_info(self.root, f"{_('Aide')} - {_('Raccourcis Clavier')}", shortcuts)
@@ -774,7 +784,7 @@ class ModernText2SVG3DWindow:
 def main() -> None:
     """Launch modern GUI."""
     root = tk.Tk()
-    app = ModernText2SVG3DWindow(root)
+    _app = ModernText2SVG3DWindow(root)  # noqa: F841 - Keep reference to prevent GC
 
     # Center window
     root.update_idletasks()
