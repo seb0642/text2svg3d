@@ -157,3 +157,53 @@ def load_generation_history() -> List[dict]:
         logger.error(f"Unexpected error loading generation history: {e}")
 
     return []
+
+
+# Language preference file
+LANGUAGE_PREF_FILE: Path = PREFERENCES_DIR / "language.json"
+
+
+# Language preference functions
+def save_language_preference(language: str) -> None:
+    """
+    Save user's language preference.
+
+    Args:
+        language: Language code (e.g., "en_US", "fr_FR")
+    """
+    try:
+        PREFERENCES_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
+
+        with open(LANGUAGE_PREF_FILE, "w") as f:
+            json.dump({"language": language, "version": "1.0"}, f, indent=2)
+
+        logger.debug(f"Language preference saved: {language}")
+    except (OSError, IOError, PermissionError) as e:
+        logger.warning(f"Failed to save language preference: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error saving language preference: {e}")
+
+
+def load_language_preference() -> str:
+    """
+    Load user's language preference.
+
+    Returns:
+        Language code (defaults to system locale or "fr_FR")
+    """
+    try:
+        if LANGUAGE_PREF_FILE.exists():
+            with open(LANGUAGE_PREF_FILE, "r") as f:
+                data = json.load(f)
+                language = data.get("language", "fr_FR")
+                logger.debug(f"Loaded language preference: {language}")
+                return language
+    except (OSError, IOError, PermissionError) as e:
+        logger.debug(f"Failed to load language preference: {e}")
+    except json.JSONDecodeError as e:
+        logger.warning(f"Corrupt language preference file: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error loading language preference: {e}")
+
+    # Default to French (original language)
+    return "fr_FR"

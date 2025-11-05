@@ -12,11 +12,14 @@ from ..config import (
     DEFAULT_OUTPUT_DIR,
     DEFAULT_SIZE_MM,
     load_generation_history,
+    load_language_preference,
     load_theme_preference,
     save_generation_history,
+    save_language_preference,
     save_theme_preference,
 )
 from ..font_manager import FontManager
+from ..i18n import _, setup_i18n
 from .design_system import ICONS, Theme, get_font, get_spacing
 from .file_operations import FileOperations
 from .modern_widgets import (
@@ -38,8 +41,25 @@ class ModernText2SVG3DWindow:
     def __init__(self, root: tk.Tk) -> None:
         """Initialize modern GUI window."""
         self.root = root
+
+        # Setup internationalization with user preference
+        saved_language = load_language_preference()
+        setup_i18n(language=saved_language)
+        logger.info(f"Loaded language preference: {saved_language}")
+
         self.root.title(f"{ICONS['3d']} text2svg3d - SVG Generator for 3D Printing")
-        self.root.geometry("900x800")
+
+        # Detect screen size and set appropriate layout mode
+        self.layout_mode = self._detect_layout_mode()
+
+        # Adjust window size based on layout mode
+        if self.layout_mode == "compact":
+            self.root.geometry("750x650")
+            logger.info("Compact layout mode detected (small screen)")
+        else:
+            self.root.geometry("900x800")
+            logger.info("Normal layout mode detected")
+
         self.root.resizable(True, True)
 
         # Theme - load user preference
@@ -74,6 +94,29 @@ class ModernText2SVG3DWindow:
         self._bind_events()
         self._update_output_filename()
 
+    def _detect_layout_mode(self) -> str:
+        """
+        Detect optimal layout mode based on screen size.
+
+        Returns:
+            "compact" for small screens (<800px height or <1000px width)
+            "normal" for regular screens
+        """
+        try:
+            # Get screen dimensions
+            screen_width = self.root.winfo_screenwidth()
+            screen_height = self.root.winfo_screenheight()
+
+            logger.info(f"Screen resolution: {screen_width}x{screen_height}")
+
+            # Determine layout mode
+            if screen_height < 800 or screen_width < 1000:
+                return "compact"
+            return "normal"
+        except Exception as e:
+            logger.warning(f"Failed to detect screen size: {e}, using normal layout")
+            return "normal"
+
     def _init_variables(self) -> None:
         """Initialize all tkinter variables."""
         self.text_var = tk.StringVar(value="HELLO")
@@ -100,6 +143,14 @@ class ModernText2SVG3DWindow:
         logger.info(f"Theme changed to: {mode}")
         # Save preference
         save_theme_preference(mode)
+
+    def _get_spacing(self, key: str) -> int:
+        """Get spacing adjusted for layout mode."""
+        base_spacing = get_spacing(key)
+        if self.layout_mode == "compact":
+            # Reduce spacing by 50% in compact mode
+            return base_spacing // 2
+        return base_spacing
 
     def _create_modern_layout(self) -> None:
         """Create modern layout with cards and sections."""
@@ -131,7 +182,13 @@ class ModernText2SVG3DWindow:
 
         # Main content in cards
         self._create_text_input_card(container)
-        self._create_preview_card(container)
+
+        # Skip preview in compact mode to save space
+        if self.layout_mode != "compact":
+            self._create_preview_card(container)
+        else:
+            logger.info("Preview hidden in compact mode")
+
         self._create_font_selection_card(container)
         self._create_parameters_card(container)
         self._create_options_card(container)
@@ -159,7 +216,7 @@ class ModernText2SVG3DWindow:
 
         subtitle = tk.Label(
             left_frame,
-            text="Générateur SVG professionnel pour impression 3D",
+            text=_("Générateur SVG professionnel pour impression 3D"),
             font=get_font("body_medium"),
             bg=self.theme.get_color("background"),
             fg=self.theme.get_color("text_secondary"),
@@ -172,7 +229,7 @@ class ModernText2SVG3DWindow:
 
         theme_label = tk.Label(
             right_frame,
-            text="Thème:",
+            text=_("Thème:"),
             font=get_font("body_small"),
             bg=self.theme.get_color("background"),
             fg=self.theme.get_color("text_secondary"),
@@ -203,19 +260,19 @@ class ModernText2SVG3DWindow:
 
     def _create_text_input_card(self, parent: tk.Frame) -> None:
         """Create text input card."""
-        card = ModernCard(parent, self.theme, title=f"{ICONS['text']} Votre Texte")
+        card = ModernCard(parent, self.theme, title=f"{ICONS['text']} {_('Saisie du texte')}")
         card.pack(fill=tk.X, pady=(0, get_spacing("md")))
 
         # Content
         content = tk.Frame(card, bg=self.theme.get_color("surface"))
         content.pack(fill=tk.X, padx=get_spacing("md"), pady=get_spacing("md"))
 
-        entry = ModernEntry(content, self.theme, "Texte à convertir", self.text_var)
+        entry = ModernEntry(content, self.theme, _("Texte à convertir"), self.text_var)
         entry.pack(fill=tk.X)
 
     def _create_preview_card(self, parent: tk.Frame) -> None:
         """Create preview card."""
-        card = ModernCard(parent, self.theme, title=f"{ICONS['preview']} Aperçu")
+        card = ModernCard(parent, self.theme, title=f"{ICONS['preview']} {_('Aperçu')}")
         card.pack(fill=tk.X, pady=(0, get_spacing("md")))
 
         # Visual preview
@@ -226,7 +283,7 @@ class ModernText2SVG3DWindow:
 
     def _create_font_selection_card(self, parent: tk.Frame) -> None:
         """Create font selection card."""
-        card = ModernCard(parent, self.theme, title=f"{ICONS['font']} Police")
+        card = ModernCard(parent, self.theme, title=f"{ICONS['font']} {_('Sélection de la police')}")
         card.pack(fill=tk.X, pady=(0, get_spacing("md")))
 
         content = tk.Frame(card, bg=self.theme.get_color("surface"))
@@ -234,7 +291,7 @@ class ModernText2SVG3DWindow:
 
         # Filter entry
         filter_entry = ModernEntry(
-            content, self.theme, f"{ICONS['search']} Filtrer les polices", self.filter_var
+            content, self.theme, f"{ICONS['search']} {_('Rechercher une police...')}", self.filter_var
         )
         filter_entry.pack(fill=tk.X, pady=(0, get_spacing("sm")))
 
@@ -272,7 +329,7 @@ class ModernText2SVG3DWindow:
 
     def _create_parameters_card(self, parent: tk.Frame) -> None:
         """Create parameters card."""
-        card = ModernCard(parent, self.theme, title=f"{ICONS['settings']} Paramètres")
+        card = ModernCard(parent, self.theme, title=f"{ICONS['settings']} {_('Paramètres')}")
         card.pack(fill=tk.X, pady=(0, get_spacing("md")))
 
         content = tk.Frame(card, bg=self.theme.get_color("surface"))
@@ -281,7 +338,7 @@ class ModernText2SVG3DWindow:
         # Size slider
         self._create_slider(
             content,
-            f"{ICONS['size']} Largeur",
+            f"{ICONS['size']} {_('Largeur finale (mm)')}",
             self.size_var,
             5,
             180,
@@ -291,7 +348,7 @@ class ModernText2SVG3DWindow:
         # Spacing slider
         self._create_slider(
             content,
-            f"{ICONS['spacing']} Espacement",
+            f"{ICONS['spacing']} {_('Espacement entre lettres (mm)')}",
             self.spacing_var,
             -5,
             10,
@@ -362,7 +419,7 @@ class ModernText2SVG3DWindow:
 
     def _create_options_card(self, parent: tk.Frame) -> None:
         """Create options card."""
-        card = ModernCard(parent, self.theme, title=f"{ICONS['outline']} Options Avancées")
+        card = ModernCard(parent, self.theme, title=f"{ICONS['outline']} {_('Options')}")
         card.pack(fill=tk.X, pady=(0, get_spacing("md")))
 
         content = tk.Frame(card, bg=self.theme.get_color("surface"))
@@ -371,7 +428,7 @@ class ModernText2SVG3DWindow:
         # Checkboxes
         outline_check = tk.Checkbutton(
             content,
-            text=f"{ICONS['outline']} Générer fichier de contour",
+            text=f"{ICONS['outline']} {_('Générer un contour')}",
             variable=self.enable_outline_var,
             font=get_font("body_medium"),
             bg=self.theme.get_color("surface"),
@@ -384,7 +441,7 @@ class ModernText2SVG3DWindow:
 
         separate_check = tk.Checkbutton(
             content,
-            text=f"{ICONS['color']} Séparer chaque lettre (multi-couleur)",
+            text=f"{ICONS['color']} {_('Séparer les lettres')}",
             variable=self.separate_letters_var,
             font=get_font("body_medium"),
             bg=self.theme.get_color("surface"),
@@ -397,7 +454,7 @@ class ModernText2SVG3DWindow:
 
     def _create_output_card(self, parent: tk.Frame) -> None:
         """Create output file card."""
-        card = ModernCard(parent, self.theme, title=f"{ICONS['file']} Fichier de Sortie")
+        card = ModernCard(parent, self.theme, title=f"{ICONS['file']} {_('Fichier de sortie')}")
         card.pack(fill=tk.X, pady=(0, get_spacing("md")))
 
         content = tk.Frame(card, bg=self.theme.get_color("surface"))
@@ -412,7 +469,7 @@ class ModernText2SVG3DWindow:
 
         browse_btn = ModernButton(
             row,
-            text="Parcourir",
+            text=_("Parcourir..."),
             command=self._browse_output,
             theme=self.theme,
             icon=ICONS["folder"],
@@ -429,7 +486,7 @@ class ModernText2SVG3DWindow:
         # Generate button (large and centered)
         self.generate_button = ModernButton(
             action_frame,
-            text="Générer le SVG",
+            text=_("Générer le SVG"),
             command=self._generate_svg,
             theme=self.theme,
             icon=ICONS["generate"],
@@ -508,11 +565,12 @@ class ModernText2SVG3DWindow:
 
     def _load_fonts(self) -> None:
         """Load fonts."""
-        self.status_var.set(f"{ICONS['refresh']} Chargement des polices...")
+        self.status_var.set(f"{ICONS['refresh']} {_('Chargement des polices...')}")
         self.all_fonts = self.font_manager.list_fonts()
         self.filtered_fonts = self.all_fonts
         self._update_font_list()
-        self.status_var.set(f"{ICONS['success']} {len(self.all_fonts)} polices chargées")
+        # Note: This status message intentionally kept untranslated to show count dynamically
+        self.status_var.set(f"{ICONS['success']} {len(self.all_fonts)} {_('polices chargées')}")
 
     def _update_font_list(self) -> None:
         """Update font combobox."""
@@ -534,7 +592,7 @@ class ModernText2SVG3DWindow:
         self.font_manager.clear_cache()
         self.font_manager = FontManager(use_cache=False)
         self._load_fonts()
-        show_info("Succès", f"✓ {len(self.all_fonts)} polices trouvées !")
+        show_info(_("Succès"), f"✓ {len(self.all_fonts)} {_('polices chargées')} !")
 
     def _update_preview(self, *args) -> None:
         """Update preview."""
@@ -583,12 +641,12 @@ class ModernText2SVG3DWindow:
         """Generate SVG with progress indication (threaded)."""
         text = self.text_var.get()
         if not text:
-            show_error("Erreur", "Veuillez entrer du texte")
+            show_error(_("Erreur"), _("Veuillez entrer du texte"))
             return
 
         font_name = self.font_var.get()
         if not font_name:
-            show_error("Erreur", "Veuillez sélectionner une police")
+            show_error(_("Erreur"), _("Veuillez sélectionner une police"))
             return
 
         # Disable button during generation
@@ -599,7 +657,7 @@ class ModernText2SVG3DWindow:
             self.progress_indicator.pack(pady=get_spacing("sm"))
             self.progress_indicator.start()
 
-        self.status_var.set(f"{ICONS['generate']} Génération en cours...")
+        self.status_var.set(f"{ICONS['generate']} {_('Génération en cours...')}")
         self.root.update()
 
         # Launch generation in background thread
@@ -645,10 +703,10 @@ class ModernText2SVG3DWindow:
 
         # Show result
         if success:
-            self.status_var.set(f"{ICONS['success']} SVG créé avec succès !")
+            self.status_var.set(f"{ICONS['success']} {_('SVG créé avec succès !')}")
             show_info(
-                "Succès",
-                f"{ICONS['success']} Fichiers créés :\n"
+                _("Succès"),
+                f"{ICONS['success']} {_('Fichiers créés :')}:\n"
                 + "\n".join([f"• {Path(f).name}" for f in files[:5]]),
             )
             logger.info(f"SVG generation completed successfully: {len(files)} file(s)")
@@ -670,8 +728,8 @@ class ModernText2SVG3DWindow:
             }
             save_generation_history(history_entry)
         else:
-            self.status_var.set(f"{ICONS['error']} Erreur : {error}")
-            show_error("Erreur", error)
+            self.status_var.set(f"{ICONS['error']} {_('Erreur')} : {error}")
+            show_error(_("Erreur"), error)
             logger.error(f"SVG generation failed: {error}")
 
     def _open_output_folder(self) -> None:
@@ -695,22 +753,22 @@ class ModernText2SVG3DWindow:
             logger.error(f"Failed to open output folder: {e}")
             show_error(
                 self.root,
-                "Erreur",
-                f"Impossible d'ouvrir le dossier :\n{output_dir}\n\nErreur: {e}",
+                _("Erreur"),
+                f"{_('Impossible d'ouvrir le dossier')} :\n{output_dir}\n\n{_('Erreur')}: {e}",
             )
 
     def _show_shortcuts_help(self) -> None:
         """Show keyboard shortcuts help dialog."""
-        shortcuts = f"""{ICONS['info']} Raccourcis Clavier
+        shortcuts = f"""{ICONS['info']} {_('Raccourcis Clavier')}
 
-{ICONS['generate']} Ctrl+G : Générer le SVG
-{ICONS['3d']} Ctrl+T : Basculer thème clair/sombre
-{ICONS['folder']} Ctrl+O : Ouvrir le dossier de sortie
-{ICONS['refresh']} Ctrl+R : Rafraîchir la liste des polices
-{ICONS['close']} Ctrl+Q : Quitter l'application
-{ICONS['info']} F1 : Afficher cette aide
+{ICONS['generate']} Ctrl+G : {_('Générer le SVG')}
+{ICONS['3d']} Ctrl+T : {_('Basculer thème clair/sombre')}
+{ICONS['folder']} Ctrl+O : {_('Ouvrir le dossier de sortie')}
+{ICONS['refresh']} Ctrl+R : {_('Rafraîchir la liste des polices')}
+{ICONS['close']} Ctrl+Q : {_('Quitter l\'application')}
+{ICONS['info']} F1 : {_('Afficher cette aide')}
 """
-        show_info(self.root, "Aide - Raccourcis Clavier", shortcuts)
+        show_info(self.root, f"{_('Aide')} - {_('Raccourcis Clavier')}", shortcuts)
 
 
 def main() -> None:
