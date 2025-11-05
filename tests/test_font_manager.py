@@ -15,6 +15,7 @@ class TestFontManager(unittest.TestCase):
         """Set up test fixtures."""
         try:
             from text2svg3d.font_manager import FontManager
+
             self.FontManager = FontManager
             self.can_test = True
         except ImportError:
@@ -73,10 +74,7 @@ class TestFontManager(unittest.TestCase):
 
         # All filtered fonts should start with the first letter
         for name, _ in filtered:
-            self.assertTrue(
-                name.startswith(first_letter) or
-                name.startswith(first_letter.lower())
-            )
+            self.assertTrue(name.startswith(first_letter) or name.startswith(first_letter.lower()))
 
     def test_get_font_path(self):
         """Test getting font path by name."""

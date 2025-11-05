@@ -1,7 +1,7 @@
 """Tests for SVG output generation."""
 
-import unittest
 import tempfile
+import unittest
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
@@ -49,16 +49,11 @@ class TestSVGOutput(unittest.TestCase):
         width, height = converter.get_text_dimensions("A")
 
         # Build SVG
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.svg', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".svg", delete=False) as f:
             temp_path = Path(f.name)
 
         try:
-            builder = self.SVGBuilder(
-                text="A",
-                font_name=font_name,
-                size_mm=20.0,
-                thickness_mm=2.0
-            )
+            builder = self.SVGBuilder(text="A", font_name=font_name, size_mm=20.0, thickness_mm=2.0)
 
             builder.build_svg(outlines, temp_path, width, height)
 
@@ -73,12 +68,12 @@ class TestSVGOutput(unittest.TestCase):
             root = tree.getroot()
 
             # Check it's an SVG
-            self.assertIn('svg', root.tag.lower())
+            self.assertIn("svg", root.tag.lower())
 
             # Should have at least one path element
             # Note: namespace might be present
             paths = list(root.iter())
-            path_elements = [p for p in paths if 'path' in p.tag.lower()]
+            path_elements = [p for p in paths if "path" in p.tag.lower()]
             self.assertGreater(len(path_elements), 0)
 
         finally:
@@ -111,10 +106,7 @@ class TestSVGOutput(unittest.TestCase):
         for outline in outlines:
             path_data = outline.path_data.strip()
             # Should end with 'Z'
-            self.assertTrue(
-                path_data.endswith('Z'),
-                f"Path should end with 'Z': {path_data[-20:]}"
-            )
+            self.assertTrue(path_data.endswith("Z"), f"Path should end with 'Z': {path_data[-20:]}")
 
     def test_multiple_characters(self):
         """Test conversion of multiple characters."""

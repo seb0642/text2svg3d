@@ -1,25 +1,24 @@
 """SVG document builder for 3D printing."""
 
+import logging
 from pathlib import Path
 from typing import List
 from xml.dom import minidom
+from xml.parsers.expat import ExpatError
 
 import svgwrite
 
-from .config import SVG_NAMESPACE, SVG_UNITS
+from .config import SVG_UNITS
 from .glyph_converter import GlyphOutline
+
+# Setup logging
+logger = logging.getLogger(__name__)
 
 
 class SVGBuilder:
     """Builds SVG documents optimized for 3D printing."""
 
-    def __init__(
-        self,
-        text: str,
-        font_name: str,
-        size_mm: float,
-        thickness_mm: float
-    ) -> None:
+    def __init__(self, text: str, font_name: str, size_mm: float, thickness_mm: float) -> None:
         """
         Initialize the SVG builder.
 
@@ -35,11 +34,7 @@ class SVGBuilder:
         self.thickness_mm = thickness_mm
 
     def build_svg(
-        self,
-        outlines: List[GlyphOutline],
-        output_path: Path,
-        width_mm: float,
-        height_mm: float
+        self, outlines: List[GlyphOutline], output_path: Path, width_mm: float, height_mm: float
     ) -> None:
         """
         Build and save SVG document.
@@ -55,7 +50,7 @@ class SVGBuilder:
             str(output_path),
             size=(f"{width_mm}{SVG_UNITS}", f"{height_mm}{SVG_UNITS}"),
             viewBox=f"0 0 {width_mm} {height_mm}",
-            profile='full'
+            profile="full",
         )
 
         # Metadata would be added here
@@ -78,7 +73,7 @@ class SVGBuilder:
                 id=path_id,
                 fill="black",
                 stroke="none",
-                fill_rule="evenodd"  # Important for letters with holes (O, A, B, etc.)
+                fill_rule="evenodd",  # Important for letters with holes (O, A, B, etc.)
             )
 
             dwg.add(path)
@@ -98,7 +93,7 @@ class SVGBuilder:
         output_path: Path,
         width_mm: float,
         height_mm: float,
-        outline_width_mm: float
+        outline_width_mm: float,
     ) -> None:
         """
         Build and save SVG document with outline/stroke.
@@ -120,7 +115,7 @@ class SVGBuilder:
             str(output_path),
             size=(f"{total_width}{SVG_UNITS}", f"{total_height}{SVG_UNITS}"),
             viewBox=f"0 0 {total_width} {total_height}",
-            profile='full'
+            profile="full",
         )
 
         # Metadata would be added here
@@ -146,7 +141,7 @@ class SVGBuilder:
                 stroke_width=f"{outline_width_mm}{SVG_UNITS}",
                 stroke_linejoin="round",  # Round corners for better 3D printing
                 stroke_linecap="round",  # Round ends
-                fill_rule="evenodd"
+                fill_rule="evenodd",
             )
 
             dwg.add(path)
@@ -172,23 +167,23 @@ class SVGBuilder:
         """
         # Convert special characters to readable names
         special_chars = {
-            ' ': 'space',
-            '!': 'exclamation',
-            '?': 'question',
-            '.': 'period',
-            ',': 'comma',
-            ':': 'colon',
-            ';': 'semicolon',
-            '-': 'hyphen',
-            '_': 'underscore',
-            '/': 'slash',
-            '\\': 'backslash',
-            '(': 'lparen',
-            ')': 'rparen',
-            '[': 'lbracket',
-            ']': 'rbracket',
-            '{': 'lbrace',
-            '}': 'rbrace',
+            " ": "space",
+            "!": "exclamation",
+            "?": "question",
+            ".": "period",
+            ",": "comma",
+            ":": "colon",
+            ";": "semicolon",
+            "-": "hyphen",
+            "_": "underscore",
+            "/": "slash",
+            "\\": "backslash",
+            "(": "lparen",
+            ")": "rparen",
+            "[": "lbracket",
+            "]": "rbracket",
+            "{": "lbrace",
+            "}": "rbrace",
         }
 
         if char in special_chars:
@@ -221,16 +216,16 @@ class SVGBuilder:
         while i < len(parts):
             part = parts[i]
 
-            if part in ['M', 'L', 'Q', 'Z']:
+            if part in ["M", "L", "Q", "Z"]:
                 # Command letter
                 transformed_parts.append(part)
                 i += 1
 
-                if part == 'Z':
+                if part == "Z":
                     continue
 
                 # Process coordinates following the command
-                if part == 'M' or part == 'L':
+                if part == "M" or part == "L":
                     # Move or Line: x y
                     if i + 1 < len(parts):
                         x = float(parts[i]) + x_offset
@@ -238,7 +233,7 @@ class SVGBuilder:
                         transformed_parts.append(f"{x:.2f}")
                         transformed_parts.append(f"{y:.2f}")
                         i += 2
-                elif part == 'Q':
+                elif part == "Q":
                     # Quadratic: cx cy x y
                     if i + 3 < len(parts):
                         cx = float(parts[i]) + x_offset
@@ -258,11 +253,7 @@ class SVGBuilder:
         return " ".join(transformed_parts)
 
     def build_svg_per_letter(
-        self,
-        outlines: List[GlyphOutline],
-        output_path: Path,
-        width_mm: float,
-        height_mm: float
+        self, outlines: List[GlyphOutline], output_path: Path, width_mm: float, height_mm: float
     ) -> List[str]:
         """
         Build and save separate SVG files for each letter.
@@ -282,7 +273,10 @@ class SVGBuilder:
         for idx, outline in enumerate(outlines):
             # Create filename for this letter
             char_safe = self._sanitize_char_for_id(outline.char)
-            letter_path = output_path.parent / f"{output_path.stem}_lettre_{idx+1}_{char_safe}{output_path.suffix}"
+            letter_path = (
+                output_path.parent
+                / f"{output_path.stem}_lettre_{idx+1}_{char_safe}{output_path.suffix}"
+            )
 
             # Calculate width for this letter only
             letter_width = outline.advance_width
@@ -292,7 +286,7 @@ class SVGBuilder:
                 str(letter_path),
                 size=(f"{letter_width}{SVG_UNITS}", f"{height_mm}{SVG_UNITS}"),
                 viewBox=f"0 0 {letter_width} {height_mm}",
-                profile='full'
+                profile="full",
             )
 
             # Metadata would be added here
@@ -303,11 +297,7 @@ class SVGBuilder:
             path_id = f"letter_{char_safe_id}_{idx}"
 
             path = dwg.path(
-                d=outline.path_data,
-                id=path_id,
-                fill="black",
-                stroke="none",
-                fill_rule="evenodd"
+                d=outline.path_data, id=path_id, fill="black", stroke="none", fill_rule="evenodd"
             )
 
             dwg.add(path)
@@ -334,16 +324,24 @@ class SVGBuilder:
         """
         try:
             # Read and parse the SVG
-            with open(output_path, 'r') as f:
+            with open(output_path, "r") as f:
                 content = f.read()
 
-            # Parse with minidom for pretty printing
-            dom = minidom.parseString(content)
+            # Parse with minidom for pretty printing (our own generated SVG)
+            dom = minidom.parseString(content)  # nosec B318
 
             # Write back with proper formatting
-            with open(output_path, 'w') as f:
+            with open(output_path, "w") as f:
                 f.write(dom.toprettyxml(indent="  ", encoding=None))
 
-        except Exception:
-            # If post-processing fails, keep original file
-            pass
+            logger.debug(f"Post-processed SVG file: {output_path}")
+
+        except OSError as e:
+            # File errors - log but keep original
+            logger.warning(f"Failed to post-process SVG {output_path}: {e}")
+        except ExpatError as e:
+            # XML parsing error - log but keep original
+            logger.warning(f"Failed to parse SVG for post-processing {output_path}: {e}")
+        except Exception as e:
+            # Unexpected error - log as error
+            logger.error(f"Unexpected error post-processing SVG {output_path}: {e}")

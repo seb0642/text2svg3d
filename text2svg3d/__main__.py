@@ -66,7 +66,7 @@ def convert_text_command(args: argparse.Namespace) -> int:
         return 1
 
     if args.verbose:
-        print(f"Converting text: \"{text}\"")
+        print(f'Converting text: "{text}"')
         print(f"Font: {args.font}")
         print(f"Size: {args.size}mm")
         print(f"Output: {args.output}")
@@ -97,7 +97,9 @@ def convert_text_command(args: argparse.Namespace) -> int:
         outlines = converter.convert_text(text, args.letter_spacing)
 
         if not outlines:
-            print(f"Error: No characters could be converted. Font may not support these characters.")
+            print(
+                "Error: No characters could be converted. Font may not support these characters."
+            )
             return 1
 
         if len(outlines) < len(text):
@@ -107,17 +109,14 @@ def convert_text_command(args: argparse.Namespace) -> int:
         width, height = converter.get_text_dimensions(text, args.letter_spacing)
 
         if args.preview:
-            print(f"\nSVG Dimensions:")
+            print("\nSVG Dimensions:")
             print(f"  Width:  {width:.2f}mm")
             print(f"  Height: {height:.2f}mm")
             print(f"  Suggested thickness: {args.thickness}mm")
 
         # Build SVG
         builder = SVGBuilder(
-            text=text,
-            font_name=args.font,
-            size_mm=args.size,
-            thickness_mm=args.thickness
+            text=text, font_name=args.font, size_mm=args.size, thickness_mm=args.thickness
         )
 
         output_path = Path(args.output)
@@ -134,6 +133,7 @@ def convert_text_command(args: argparse.Namespace) -> int:
         print(f"Error during conversion: {e}")
         if args.verbose:
             import traceback
+
             traceback.print_exc()
         return 1
 
@@ -145,78 +145,94 @@ def main() -> int:
     Returns:
         Exit code
     """
+
+    # Validation functions for arguments
+    def validate_size(value: str) -> float:
+        """Validate size argument."""
+        try:
+            fvalue = float(value)
+            if not 0.1 <= fvalue <= 1000:
+                raise argparse.ArgumentTypeError(f"size must be between 0.1 and 1000, got {fvalue}")
+            return fvalue
+        except ValueError:
+            raise argparse.ArgumentTypeError(f"size must be a number, got '{value}'")
+
+    def validate_thickness(value: str) -> float:
+        """Validate thickness argument."""
+        try:
+            fvalue = float(value)
+            if not 0.1 <= fvalue <= 100:
+                raise argparse.ArgumentTypeError(
+                    f"thickness must be between 0.1 and 100, got {fvalue}"
+                )
+            return fvalue
+        except ValueError:
+            raise argparse.ArgumentTypeError(f"thickness must be a number, got '{value}'")
+
+    def validate_spacing(value: str) -> float:
+        """Validate letter spacing argument."""
+        try:
+            fvalue = float(value)
+            if not -10 <= fvalue <= 100:
+                raise argparse.ArgumentTypeError(
+                    f"letter-spacing must be between -10 and 100, got {fvalue}"
+                )
+            return fvalue
+        except ValueError:
+            raise argparse.ArgumentTypeError(f"letter-spacing must be a number, got '{value}'")
+
     parser = argparse.ArgumentParser(
-        description="Convert text to SVG for 3D printing",
-        prog="text2svg3d"
+        description="Convert text to SVG for 3D printing", prog="text2svg3d"
+    )
+
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+
+    parser.add_argument("text", nargs="?", help="Text to convert to SVG")
+
+    parser.add_argument(
+        "-f", "--font", default="DejaVu Sans", help="Font family name (default: DejaVu Sans)"
     )
 
     parser.add_argument(
-        "--version",
-        action="version",
-        version=f"%(prog)s {__version__}"
-    )
-
-    parser.add_argument(
-        "text",
-        nargs="?",
-        help="Text to convert to SVG"
-    )
-
-    parser.add_argument(
-        "-f", "--font",
-        default="DejaVu Sans",
-        help="Font family name (default: DejaVu Sans)"
-    )
-
-    parser.add_argument(
-        "-s", "--size",
-        type=float,
+        "-s",
+        "--size",
+        type=validate_size,
         default=DEFAULT_SIZE_MM,
-        help=f"Text height in mm (default: {DEFAULT_SIZE_MM})"
+        help=f"Text height in mm (default: {DEFAULT_SIZE_MM}, range: 0.1-1000)",
     )
 
     parser.add_argument(
-        "-o", "--output",
+        "-o",
+        "--output",
         default=DEFAULT_OUTPUT_FILE,
-        help=f"Output SVG file (default: {DEFAULT_OUTPUT_FILE})"
+        help=f"Output SVG file (default: {DEFAULT_OUTPUT_FILE})",
     )
 
     parser.add_argument(
-        "-t", "--thickness",
-        type=float,
+        "-t",
+        "--thickness",
+        type=validate_thickness,
         default=DEFAULT_THICKNESS_MM,
-        help=f"Suggested extrusion thickness in mm (default: {DEFAULT_THICKNESS_MM})"
+        help=f"Suggested extrusion thickness in mm (default: {DEFAULT_THICKNESS_MM}, range: 0.1-100)",
     )
 
     parser.add_argument(
-        "-l", "--letter-spacing",
-        type=float,
+        "-l",
+        "--letter-spacing",
+        type=validate_spacing,
         default=DEFAULT_LETTER_SPACING_MM,
-        help=f"Letter spacing in mm (default: {DEFAULT_LETTER_SPACING_MM})"
+        help=f"Letter spacing in mm (default: {DEFAULT_LETTER_SPACING_MM}, range: -10 to 100)",
     )
 
-    parser.add_argument(
-        "--list-fonts",
-        action="store_true",
-        help="List all available system fonts"
-    )
+    parser.add_argument("--list-fonts", action="store_true", help="List all available system fonts")
 
     parser.add_argument(
-        "--filter-fonts",
-        help="Filter fonts by regex pattern (use with --list-fonts)"
+        "--filter-fonts", help="Filter fonts by regex pattern (use with --list-fonts)"
     )
 
-    parser.add_argument(
-        "--preview",
-        action="store_true",
-        help="Display SVG dimensions and info"
-    )
+    parser.add_argument("--preview", action="store_true", help="Display SVG dimensions and info")
 
-    parser.add_argument(
-        "-v", "--verbose",
-        action="store_true",
-        help="Verbose output for debugging"
-    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output for debugging")
 
     args = parser.parse_args()
 

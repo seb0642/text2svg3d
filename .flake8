@@ -1,0 +1,24 @@
+[flake8]
+max-line-length = 100
+max-complexity = 10
+exclude =
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    build,
+    dist,
+    *.egg-info,
+    .mypy_cache,
+    .pytest_cache
+
+# Ignore specific error codes
+# C901: function too complex (acceptable for CLI and complex logic)
+ignore = E203,E501,W503,E231,C901
+
+# Error codes to always show
+select = C,E,F,W,B,B950
+
+per-file-ignores =
+    __init__.py:F401
+    test_*.py:F401,F811

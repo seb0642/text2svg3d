@@ -1,0 +1,175 @@
+# English translations for text2svg3d
+# Copyright (C) 2025 text2svg3d
+# This file is distributed under the same license as the text2svg3d package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: text2svg3d 1.0.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-05 12:00+0000\n"
+"PO-Revision-Date: 2025-11-05 12:00+0000\n"
+"Last-Translator: text2svg3d team\n"
+"Language: en_US\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# GUI - Main window
+msgid "Générer le SVG"
+msgstr "Generate SVG"
+
+msgid "Prêt"
+msgstr "Ready"
+
+msgid "Génération en cours..."
+msgstr "Generating..."
+
+msgid "SVG créé avec succès !"
+msgstr "SVG created successfully!"
+
+msgid "Erreur"
+msgstr "Error"
+
+msgid "Succès"
+msgstr "Success"
+
+# GUI - Cards
+msgid "Saisie du texte"
+msgstr "Text Input"
+
+msgid "Aperçu"
+msgstr "Preview"
+
+msgid "Sélection de la police"
+msgstr "Font Selection"
+
+msgid "Paramètres"
+msgstr "Parameters"
+
+msgid "Options"
+msgstr "Options"
+
+msgid "Fichier de sortie"
+msgstr "Output File"
+
+# GUI - Fields
+msgid "Texte à convertir"
+msgstr "Text to convert"
+
+msgid "Rechercher une police..."
+msgstr "Search for a font..."
+
+msgid "Largeur finale (mm)"
+msgstr "Final width (mm)"
+
+msgid "Espacement entre lettres (mm)"
+msgstr "Letter spacing (mm)"
+
+msgid "Épaisseur du contour (mm)"
+msgstr "Outline thickness (mm)"
+
+msgid "Générer un contour"
+msgstr "Generate outline"
+
+msgid "Séparer les lettres"
+msgstr "Separate letters"
+
+# GUI - Actions
+msgid "Parcourir..."
+msgstr "Browse..."
+
+msgid "Rafraîchir"
+msgstr "Refresh"
+
+msgid "Ouvrir le dossier"
+msgstr "Open folder"
+
+# GUI - Messages
+msgid "Veuillez entrer du texte"
+msgstr "Please enter text"
+
+msgid "Veuillez sélectionner une police"
+msgstr "Please select a font"
+
+msgid "Chargement des polices..."
+msgstr "Loading fonts..."
+
+msgid "Fichiers créés :"
+msgstr "Files created:"
+
+# GUI - Shortcuts help
+msgid "Raccourcis Clavier"
+msgstr "Keyboard Shortcuts"
+
+msgid "Basculer thème clair/sombre"
+msgstr "Toggle light/dark theme"
+
+msgid "Ouvrir le dossier de sortie"
+msgstr "Open output folder"
+
+msgid "Rafraîchir la liste des polices"
+msgstr "Refresh font list"
+
+msgid "Quitter l'application"
+msgstr "Quit application"
+
+msgid "Afficher cette aide"
+msgstr "Show this help"
+
+# Themes
+msgid "Clair"
+msgstr "Light"
+
+msgid "Sombre"
+msgstr "Dark"
+
+msgid "Contraste Élevé"
+msgstr "High Contrast"
+
+msgid "Solarized Sombre"
+msgstr "Solarized Dark"
+
+msgid "Solarized Clair"
+msgstr "Solarized Light"
+
+# Export messages
+msgid "PDF créé"
+msgstr "PDF created"
+
+msgid "PNG créé"
+msgstr "PNG created"
+
+msgid "DXF créé"
+msgstr "DXF created"
+
+msgid "Export PDF non disponible"
+msgstr "PDF export not available"
+
+msgid "Export PNG non disponible"
+msgstr "PNG export not available"
+
+msgid "Export DXF non disponible"
+msgstr "DXF export not available"
+
+# CLI messages
+msgid "Erreur lors de l'export"
+msgstr "Error during export"
+
+msgid "Impossible de convertir le SVG"
+msgstr "Unable to convert SVG"
+
+# Additional GUI strings
+msgid "Générateur SVG professionnel pour impression 3D"
+msgstr "Professional SVG Generator for 3D Printing"
+
+msgid "Thème:"
+msgstr "Theme:"
+
+msgid "polices chargées"
+msgstr "fonts loaded"
+
+msgid "Aide"
+msgstr "Help"
+
+msgid "Impossible d'ouvrir le dossier"
+msgstr "Unable to open folder"

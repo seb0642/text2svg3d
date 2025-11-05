@@ -1,21 +1,26 @@
 """Glyph to vector path conversion using FreeType."""
 
+import logging
 from pathlib import Path
-from typing import List, NamedTuple, Optional
+from typing import Dict, List, NamedTuple, Optional
 
 import freetype
 
 from .config import DEFAULT_COORDINATE_PRECISION, DPI
 
+logger = logging.getLogger(__name__)
+
 
 class Point(NamedTuple):
     """2D point with x, y coordinates."""
+
     x: float
     y: float
 
 
 class GlyphOutline(NamedTuple):
     """Outline data for a single glyph."""
+
     path_data: str
     advance_width: float
     char: str
@@ -31,10 +36,42 @@ class GlyphConverter:
         Args:
             font_path: Path to the TrueType/OpenType font file
             size_mm: Desired text height in millimeters
+
+        Raises:
+            FileNotFoundError: If font file does not exist
+            ValueError: If size_mm is not in valid range (0.1 to 1000)
+            RuntimeError: If font file cannot be loaded
         """
+        # Validate font_path
+        if not isinstance(font_path, Path):
+            font_path = Path(font_path)
+
+        if not font_path.exists():
+            raise FileNotFoundError(f"Font file not found: {font_path}")
+
+        if not font_path.is_file():
+            raise ValueError(f"Path is not a file: {font_path}")
+
+        # Validate size_mm
+        if not isinstance(size_mm, (int, float)):
+            raise TypeError(f"size_mm must be numeric, got {type(size_mm).__name__}")
+
+        if not 0.1 <= size_mm <= 1000:
+            raise ValueError(f"size_mm must be between 0.1 and 1000, got {size_mm}")
+
         self.font_path = font_path
         self.size_mm = size_mm
-        self.face = freetype.Face(str(font_path))
+
+        # Glyph cache for performance (LRU with max 256 glyphs)
+        self._glyph_cache: Dict[str, GlyphOutline] = {}
+        self._cache_hits = 0
+        self._cache_misses = 0
+
+        # Try to load the font
+        try:
+            self.face = freetype.Face(str(font_path))
+        except Exception as e:
+            raise RuntimeError(f"Failed to load font file {font_path}: {e}") from e
 
         # Set character size (width=0 means auto, height in 1/64th points)
         # Convert mm to points: 1mm ≈ 2.83465 points
@@ -51,11 +88,7 @@ class GlyphConverter:
         # Total height from ascender to descender
         self.total_height_mm = self.ascender_mm - self.descender_mm  # descender is negative
 
-    def convert_text(
-        self,
-        text: str,
-        letter_spacing_mm: float = 0.0
-    ) -> List[GlyphOutline]:
+    def convert_text(self, text: str, letter_spacing_mm: float = 0.0) -> List[GlyphOutline]:
         """
         Convert text string to list of glyph outlines.
 
@@ -76,7 +109,7 @@ class GlyphConverter:
                     outline = GlyphOutline(
                         path_data=outline.path_data,
                         advance_width=outline.advance_width + letter_spacing_mm,
-                        char=outline.char
+                        char=outline.char,
                     )
                     outlines.append(outline)
             except Exception:
@@ -87,7 +120,7 @@ class GlyphConverter:
 
     def _convert_char(self, char: str) -> Optional[GlyphOutline]:
         """
-        Convert a single character to SVG path data.
+        Convert a single character to SVG path data (with caching).
 
         Args:
             char: Single character to convert
@@ -95,6 +128,14 @@ class GlyphConverter:
         Returns:
             GlyphOutline or None if character not supported
         """
+        # Check cache first
+        if char in self._glyph_cache:
+            self._cache_hits += 1
+            logger.debug(f"Cache hit for '{char}' (hits: {self._cache_hits})")
+            return self._glyph_cache[char]
+
+        self._cache_misses += 1
+
         # Load the glyph for this character
         # Load with NO_SCALE to get coordinates in font units (not scaled)
         self.face.load_char(char, freetype.FT_LOAD_NO_BITMAP | freetype.FT_LOAD_NO_SCALE)
@@ -111,11 +152,22 @@ class GlyphConverter:
         # Get advance width in mm (already in font units with NO_SCALE)
         advance_mm = self._font_units_to_mm(self.face.glyph.advance.x)
 
-        return GlyphOutline(
-            path_data=path_data,
-            advance_width=advance_mm,
-            char=char
+        result = GlyphOutline(path_data=path_data, advance_width=advance_mm, char=char)
+
+        # Cache the result (implement simple LRU by limiting cache size)
+        if len(self._glyph_cache) >= 256:
+            # Remove first (oldest) item
+            first_key = next(iter(self._glyph_cache))
+            del self._glyph_cache[first_key]
+            logger.debug(f"Cache full, removed '{first_key}'")
+
+        self._glyph_cache[char] = result
+        logger.debug(
+            f"Cached '{char}' (cache size: {len(self._glyph_cache)}, "
+            f"hit rate: {self._cache_hits / (self._cache_hits + self._cache_misses) * 100:.1f}%)"
         )
+
+        return result
 
     def _outline_to_svg_path(self, outline) -> str:
         """
@@ -136,12 +188,10 @@ class GlyphConverter:
 
         for contour_end in contours:
             # Process each contour (closed path)
-            contour_points = points[start:contour_end + 1]
-            contour_tags = tags[start:contour_end + 1]
+            contour_points = points[start : contour_end + 1]
+            contour_tags = tags[start : contour_end + 1]
 
-            path_parts.append(
-                self._contour_to_svg_path(contour_points, contour_tags)
-            )
+            path_parts.append(self._contour_to_svg_path(contour_points, contour_tags))
 
             start = contour_end + 1
 
@@ -167,7 +217,10 @@ class GlyphConverter:
 
         # Start point
         start_point = self._point_to_mm(points[0])
-        path_commands.append(f"M {start_point.x:.{DEFAULT_COORDINATE_PRECISION}f} {start_point.y:.{DEFAULT_COORDINATE_PRECISION}f}")
+        path_commands.append(
+            f"M {start_point.x:.{DEFAULT_COORDINATE_PRECISION}f} "
+            f"{start_point.y:.{DEFAULT_COORDINATE_PRECISION}f}"
+        )
 
         i = 1
         while i < n:
@@ -176,7 +229,8 @@ class GlyphConverter:
             if tag & 1:  # On-curve point
                 pt = self._point_to_mm(points[i])
                 path_commands.append(
-                    f"L {pt.x:.{DEFAULT_COORDINATE_PRECISION}f} {pt.y:.{DEFAULT_COORDINATE_PRECISION}f}"
+                    f"L {pt.x:.{DEFAULT_COORDINATE_PRECISION}f} "
+                    f"{pt.y:.{DEFAULT_COORDINATE_PRECISION}f}"
                 )
                 i += 1
             else:  # Off-curve point (control point)
@@ -191,8 +245,10 @@ class GlyphConverter:
                     mid_y = (cp1.y + cp2.y) / 2
 
                     path_commands.append(
-                        f"Q {cp1.x:.{DEFAULT_COORDINATE_PRECISION}f} {cp1.y:.{DEFAULT_COORDINATE_PRECISION}f} "
-                        f"{mid_x:.{DEFAULT_COORDINATE_PRECISION}f} {mid_y:.{DEFAULT_COORDINATE_PRECISION}f}"
+                        f"Q {cp1.x:.{DEFAULT_COORDINATE_PRECISION}f} "
+                        f"{cp1.y:.{DEFAULT_COORDINATE_PRECISION}f} "
+                        f"{mid_x:.{DEFAULT_COORDINATE_PRECISION}f} "
+                        f"{mid_y:.{DEFAULT_COORDINATE_PRECISION}f}"
                     )
                     i += 1
                 elif i + 1 < n:
@@ -201,16 +257,20 @@ class GlyphConverter:
                     end_pt = self._point_to_mm(points[i + 1])
 
                     path_commands.append(
-                        f"Q {cp.x:.{DEFAULT_COORDINATE_PRECISION}f} {cp.y:.{DEFAULT_COORDINATE_PRECISION}f} "
-                        f"{end_pt.x:.{DEFAULT_COORDINATE_PRECISION}f} {end_pt.y:.{DEFAULT_COORDINATE_PRECISION}f}"
+                        f"Q {cp.x:.{DEFAULT_COORDINATE_PRECISION}f} "
+                        f"{cp.y:.{DEFAULT_COORDINATE_PRECISION}f} "
+                        f"{end_pt.x:.{DEFAULT_COORDINATE_PRECISION}f} "
+                        f"{end_pt.y:.{DEFAULT_COORDINATE_PRECISION}f}"
                     )
                     i += 2
                 else:
                     # Last point is control point, curve back to start
                     cp = self._point_to_mm(points[i])
                     path_commands.append(
-                        f"Q {cp.x:.{DEFAULT_COORDINATE_PRECISION}f} {cp.y:.{DEFAULT_COORDINATE_PRECISION}f} "
-                        f"{start_point.x:.{DEFAULT_COORDINATE_PRECISION}f} {start_point.y:.{DEFAULT_COORDINATE_PRECISION}f}"
+                        f"Q {cp.x:.{DEFAULT_COORDINATE_PRECISION}f} "
+                        f"{cp.y:.{DEFAULT_COORDINATE_PRECISION}f} "
+                        f"{start_point.x:.{DEFAULT_COORDINATE_PRECISION}f} "
+                        f"{start_point.y:.{DEFAULT_COORDINATE_PRECISION}f}"
                     )
                     i += 1
 
