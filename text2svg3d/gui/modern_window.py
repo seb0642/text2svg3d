@@ -1,6 +1,7 @@
 """Modern UI window with dark/light theme support."""
 
 import logging
+import threading
 import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog
@@ -10,7 +11,9 @@ from ..config import (
     DEFAULT_LETTER_SPACING_MM,
     DEFAULT_OUTPUT_DIR,
     DEFAULT_SIZE_MM,
+    load_generation_history,
     load_theme_preference,
+    save_generation_history,
     save_theme_preference,
 )
 from ..font_manager import FontManager
@@ -424,7 +427,7 @@ class ModernText2SVG3DWindow:
         action_frame.pack(fill=tk.X, pady=get_spacing("lg"))
 
         # Generate button (large and centered)
-        generate_btn = ModernButton(
+        self.generate_button = ModernButton(
             action_frame,
             text="Générer le SVG",
             command=self._generate_svg,
@@ -434,7 +437,7 @@ class ModernText2SVG3DWindow:
             width=200,
             height=50,
         )
-        generate_btn.pack()
+        self.generate_button.pack()
 
         # Progress indicator (hidden by default)
         self.progress_indicator = ProgressIndicator(action_frame, self.theme)
@@ -577,7 +580,7 @@ class ModernText2SVG3DWindow:
             self.output_var.set(filename)
 
     def _generate_svg(self) -> None:
-        """Generate SVG with progress indication."""
+        """Generate SVG with progress indication (threaded)."""
         text = self.text_var.get()
         if not text:
             show_error("Erreur", "Veuillez entrer du texte")
@@ -588,6 +591,9 @@ class ModernText2SVG3DWindow:
             show_error("Erreur", "Veuillez sélectionner une police")
             return
 
+        # Disable button during generation
+        self.generate_button.configure(state="disabled")
+
         # Show progress
         if self.progress_indicator:
             self.progress_indicator.pack(pady=get_spacing("sm"))
@@ -596,8 +602,18 @@ class ModernText2SVG3DWindow:
         self.status_var.set(f"{ICONS['generate']} Génération en cours...")
         self.root.update()
 
+        # Launch generation in background thread
+        thread = threading.Thread(target=self._generate_thread, daemon=True)
+        thread.start()
+        logger.info("SVG generation started in background thread")
+
+    def _generate_thread(self) -> None:
+        """Background thread for SVG generation."""
         try:
+            text = self.text_var.get()
+            font_name = self.font_var.get()
             output_path = Path(self.output_var.get())
+
             success, files, error = self.file_ops.generate_svg(
                 text=text,
                 font_name=font_name,
@@ -609,25 +625,54 @@ class ModernText2SVG3DWindow:
                 separate_letters=self.separate_letters_var.get(),
             )
 
-            if success:
-                self.status_var.set(f"{ICONS['success']} SVG créé avec succès !")
-                show_info(
-                    "Succès",
-                    f"{ICONS['success']} Fichiers créés :\n"
-                    + "\n".join([f"• {Path(f).name}" for f in files[:5]]),
-                )
-            else:
-                self.status_var.set(f"{ICONS['error']} Erreur : {error}")
-                show_error("Erreur", error)
+            # Schedule UI update on main thread
+            self.root.after(0, lambda: self._on_generate_complete(success, files, error))
 
         except Exception as e:
             logger.error(f"Generation failed: {e}")
-            self.status_var.set(f"{ICONS['error']} Erreur")
-            show_error("Erreur", str(e))
-        finally:
-            if self.progress_indicator:
-                self.progress_indicator.stop()
-                self.progress_indicator.pack_forget()
+            # Schedule error handling on main thread
+            self.root.after(0, lambda: self._on_generate_complete(False, [], str(e)))
+
+    def _on_generate_complete(self, success: bool, files: list, error: str) -> None:
+        """Handle generation completion (called on main thread)."""
+        # Stop progress indicator
+        if self.progress_indicator:
+            self.progress_indicator.stop()
+            self.progress_indicator.pack_forget()
+
+        # Re-enable button
+        self.generate_button.configure(state="normal")
+
+        # Show result
+        if success:
+            self.status_var.set(f"{ICONS['success']} SVG créé avec succès !")
+            show_info(
+                "Succès",
+                f"{ICONS['success']} Fichiers créés :\n"
+                + "\n".join([f"• {Path(f).name}" for f in files[:5]]),
+            )
+            logger.info(f"SVG generation completed successfully: {len(files)} file(s)")
+
+            # Save to history
+            import datetime
+
+            history_entry = {
+                "timestamp": datetime.datetime.now().isoformat(),
+                "text": self.text_var.get(),
+                "font": self.font_var.get(),
+                "width_mm": self.size_var.get(),
+                "spacing_mm": self.spacing_var.get(),
+                "outline_enabled": self.enable_outline_var.get(),
+                "outline_width_mm": self.outline_width_var.get(),
+                "separate_letters": self.separate_letters_var.get(),
+                "files_count": len(files),
+                "output_path": str(files[0]) if files else "",
+            }
+            save_generation_history(history_entry)
+        else:
+            self.status_var.set(f"{ICONS['error']} Erreur : {error}")
+            show_error("Erreur", error)
+            logger.error(f"SVG generation failed: {error}")
 
     def _open_output_folder(self) -> None:
         """Open output folder in file manager."""

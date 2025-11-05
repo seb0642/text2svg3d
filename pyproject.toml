@@ -41,6 +41,29 @@ dev = [
     "pytest-cov>=4.0.0",
     "pre-commit>=3.0.0",
 ]
+export = [
+    "cairosvg>=2.7.0",      # PDF and PNG export (recommended)
+    "ezdxf>=1.0.0",         # DXF export for CAD
+    "Pillow>=10.0.0",       # Image processing (fallback PNG)
+]
+export-alt = [
+    "svglib>=1.5.1",        # Alternative PDF/PNG export
+    "reportlab>=4.0.0",     # Required by svglib
+    "ezdxf>=1.0.0",         # DXF export for CAD
+    "Pillow>=10.0.0",       # Image processing
+]
+all = [
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pre-commit>=3.0.0",
+    "cairosvg>=2.7.0",
+    "ezdxf>=1.0.0",
+    "Pillow>=10.0.0",
+]
 
 [project.scripts]
 text2svg3d = "text2svg3d.__main__:main"

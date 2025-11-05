@@ -1,0 +1,27 @@
+# Optional dependencies for advanced export features
+# Install with: pip install -r requirements-extra.txt
+
+# PDF Export (choose one)
+cairosvg>=2.7.0          # Recommended: Best quality PDF export
+# OR
+svglib>=1.5.1            # Alternative: PDF export via reportlab
+reportlab>=4.0.0         # Required if using svglib
+
+# PNG Export
+# cairosvg (already listed above) # Recommended: Best quality PNG export
+# OR
+# svglib + reportlab + Pillow (alternatives)
+Pillow>=10.0.0           # Image processing library
+
+# DXF Export (CAD format)
+ezdxf>=1.0.0             # AutoCAD DXF file format
+
+# 3D Preview (future feature)
+# pyvista>=0.42.0        # 3D visualization
+# vtk>=9.2.0             # VTK backend for pyvista
+
+# Note: Install only what you need:
+# - For PDF only: pip install cairosvg
+# - For PNG only: pip install cairosvg
+# - For DXF only: pip install ezdxf
+# - For all: pip install -r requirements-extra.txt
