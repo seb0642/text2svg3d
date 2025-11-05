@@ -44,6 +44,66 @@ COLORS = {
         "border_focus": "#60A5FA",
         "shadow": "rgba(0, 0, 0, 0.3)",
     },
+    # High Contrast Theme (Accessibility)
+    "high_contrast": {
+        "primary": "#FFFF00",  # Bright yellow
+        "primary_hover": "#FFCC00",
+        "primary_light": "#FFFFAA",
+        "secondary": "#00FFFF",  # Cyan
+        "secondary_hover": "#00CCCC",
+        "success": "#00FF00",  # Bright green
+        "warning": "#FF8800",  # Bright orange
+        "error": "#FF0000",  # Bright red
+        "background": "#000000",  # Pure black
+        "surface": "#000000",  # Pure black
+        "surface_elevated": "#1A1A1A",
+        "text_primary": "#FFFFFF",  # Pure white
+        "text_secondary": "#FFFFFF",  # Pure white
+        "text_disabled": "#808080",  # Medium gray
+        "border": "#FFFFFF",  # Pure white
+        "border_focus": "#FFFF00",  # Bright yellow
+        "shadow": "rgba(255, 255, 255, 0.3)",
+    },
+    # Solarized Dark Theme
+    "solarized": {
+        "primary": "#268BD2",  # Blue
+        "primary_hover": "#2AA198",
+        "primary_light": "#073642",
+        "secondary": "#6C71C4",  # Violet
+        "secondary_hover": "#859900",
+        "success": "#859900",  # Green
+        "warning": "#B58900",  # Yellow
+        "error": "#DC322F",  # Red
+        "background": "#002B36",  # Base03
+        "surface": "#073642",  # Base02
+        "surface_elevated": "#586E75",
+        "text_primary": "#839496",  # Base0
+        "text_secondary": "#93A1A1",  # Base1
+        "text_disabled": "#657B83",  # Base00
+        "border": "#586E75",  # Base01
+        "border_focus": "#268BD2",
+        "shadow": "rgba(0, 0, 0, 0.5)",
+    },
+    # Solarized Light Theme
+    "solarized_light": {
+        "primary": "#268BD2",  # Blue
+        "primary_hover": "#2AA198",
+        "primary_light": "#EEE8D5",
+        "secondary": "#6C71C4",  # Violet
+        "secondary_hover": "#859900",
+        "success": "#859900",  # Green
+        "warning": "#B58900",  # Yellow
+        "error": "#DC322F",  # Red
+        "background": "#FDF6E3",  # Base3
+        "surface": "#EEE8D5",  # Base2
+        "surface_elevated": "#93A1A1",
+        "text_primary": "#657B83",  # Base00
+        "text_secondary": "#586E75",  # Base01
+        "text_disabled": "#93A1A1",  # Base1
+        "border": "#93A1A1",  # Base1
+        "border_focus": "#268BD2",
+        "shadow": "rgba(0, 0, 0, 0.1)",
+    },
 }
 
 # Typography
@@ -123,13 +183,18 @@ ANIMATIONS = {
 class Theme:
     """Theme manager for the application."""
 
+    # Available themes in cycle order
+    AVAILABLE_THEMES = ["light", "dark", "high_contrast", "solarized", "solarized_light"]
+
     def __init__(self, mode: str = "light"):
         """
         Initialize theme.
 
         Args:
-            mode: "light" or "dark"
+            mode: Theme name (light, dark, high_contrast, solarized, solarized_light)
         """
+        if mode not in COLORS:
+            mode = "light"  # Fallback to light if invalid
         self.mode = mode
         self._listeners = []
 
@@ -138,10 +203,38 @@ class Theme:
         return COLORS[self.mode].get(key, "#000000")
 
     def toggle(self) -> str:
-        """Toggle between light and dark mode."""
-        self.mode = "dark" if self.mode == "light" else "light"
+        """Cycle to next theme."""
+        try:
+            current_index = self.AVAILABLE_THEMES.index(self.mode)
+            next_index = (current_index + 1) % len(self.AVAILABLE_THEMES)
+            self.mode = self.AVAILABLE_THEMES[next_index]
+        except ValueError:
+            self.mode = "light"  # Fallback if current mode not in list
+
         self._notify_listeners()
         return self.mode
+
+    def set_mode(self, mode: str) -> None:
+        """
+        Set specific theme mode.
+
+        Args:
+            mode: Theme name
+        """
+        if mode in COLORS:
+            self.mode = mode
+            self._notify_listeners()
+
+    def get_theme_name(self) -> str:
+        """Get friendly name for current theme."""
+        names = {
+            "light": "Clair",
+            "dark": "Sombre",
+            "high_contrast": "Contraste Élevé",
+            "solarized": "Solarized Sombre",
+            "solarized_light": "Solarized Clair",
+        }
+        return names.get(self.mode, self.mode)
 
     def add_listener(self, callback) -> None:
         """Add theme change listener."""
