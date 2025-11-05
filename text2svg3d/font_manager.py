@@ -1,13 +1,18 @@
 """Font management - scanning and locating system fonts."""
 
 import json
+import logging
 import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from fontTools import ttLib
+from fontTools.ttLib import TTLibError
 
 from .config import CACHE_FILE, FONT_DIRECTORIES, FONT_EXTENSIONS
+
+# Setup logging
+logger = logging.getLogger(__name__)
 
 
 class FontManager:
@@ -37,6 +42,7 @@ class FontManager:
         """Scan system directories for TrueType and OpenType fonts."""
         for font_dir in FONT_DIRECTORIES:
             if not font_dir.exists():
+                logger.debug(f"Font directory does not exist: {font_dir}")
                 continue
 
             for ext in FONT_EXTENSIONS:
@@ -47,9 +53,14 @@ class FontManager:
                             # Store first occurrence of each family name
                             if family_name not in self.fonts:
                                 self.fonts[family_name] = font_path
-                    except Exception:
-                        # Skip fonts that can't be read
+                                logger.debug(f"Found font: {family_name} at {font_path}")
+                    except (TTLibError, OSError, PermissionError) as e:
+                        # Skip fonts that can't be read (corrupt, no permission, etc.)
+                        logger.debug(f"Failed to read font {font_path}: {e}")
                         continue
+                    except Exception as e:
+                        # Unexpected error - log as warning
+                        logger.warning(f"Unexpected error reading font {font_path}: {e}")
 
     def _get_font_family_name(self, font_path: Path) -> Optional[str]:
         """
@@ -60,47 +71,84 @@ class FontManager:
 
         Returns:
             Family name or None if not found
+
+        Raises:
+            TTLibError: If font file is corrupt or invalid
+            OSError: If file cannot be accessed
         """
-        try:
-            font = ttLib.TTFont(str(font_path))
-            name_table = font["name"]
+        font = ttLib.TTFont(str(font_path))
+        name_table = font["name"]
 
-            # Try to get the family name (nameID 1)
-            # Prefer English (platformID 3, platEncID 1, langID 0x409)
-            for record in name_table.names:
-                if record.nameID == 1:  # Font Family name
-                    if record.platformID == 3 and record.langID == 0x409:
-                        return record.toUnicode()
-
-            # Fallback to any family name
-            for record in name_table.names:
-                if record.nameID == 1:
+        # Try to get the family name (nameID 1)
+        # Prefer English (platformID 3, platEncID 1, langID 0x409)
+        for record in name_table.names:
+            if record.nameID == 1:  # Font Family name
+                if record.platformID == 3 and record.langID == 0x409:
                     return record.toUnicode()
 
-        except Exception:
-            pass
+        # Fallback to any family name
+        for record in name_table.names:
+            if record.nameID == 1:
+                return record.toUnicode()
 
         return None
 
     def _save_to_cache(self) -> None:
         """Save font list to cache file."""
         try:
-            CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
-            cache_data = {name: str(path) for name, path in self.fonts.items()}
+            CACHE_FILE.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+            cache_data = {
+                "version": "1.0",
+                "fonts": {name: str(path) for name, path in self.fonts.items()}
+            }
             with open(CACHE_FILE, "w") as f:
                 json.dump(cache_data, f, indent=2)
-        except Exception:
-            # Cache is optional, ignore errors
-            pass
+            logger.debug(f"Font cache saved to {CACHE_FILE}")
+        except (OSError, IOError, PermissionError) as e:
+            # Cache is optional, log but don't fail
+            logger.warning(f"Failed to save font cache: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error saving font cache: {e}")
 
     def _load_from_cache(self) -> None:
         """Load font list from cache file."""
         try:
             with open(CACHE_FILE, "r") as f:
                 cache_data = json.load(f)
-                self.fonts = {name: Path(path) for name, path in cache_data.items()}
-        except Exception:
-            # If cache is invalid, scan system
+
+            # Validate cache format
+            if isinstance(cache_data, dict):
+                # New format with version
+                if "version" in cache_data and "fonts" in cache_data:
+                    if cache_data["version"] == "1.0":
+                        self.fonts = {
+                            name: Path(path)
+                            for name, path in cache_data["fonts"].items()
+                        }
+                        logger.debug(f"Loaded {len(self.fonts)} fonts from cache")
+                        return
+                    else:
+                        logger.warning(f"Unsupported cache version: {cache_data['version']}")
+                # Old format (direct dict)
+                elif all(isinstance(v, str) for v in cache_data.values()):
+                    logger.info("Upgrading old cache format")
+                    self.fonts = {name: Path(path) for name, path in cache_data.items()}
+                    # Save in new format
+                    self._save_to_cache()
+                    return
+
+            # Invalid format
+            logger.warning("Invalid cache format, rescanning fonts")
+            self._scan_system_fonts()
+
+        except (OSError, IOError, PermissionError) as e:
+            logger.warning(f"Failed to load font cache: {e}, rescanning fonts")
+            self._scan_system_fonts()
+        except json.JSONDecodeError as e:
+            logger.warning(f"Corrupt font cache: {e}, rescanning fonts")
+            self._scan_system_fonts()
+        except Exception as e:
+            logger.error(f"Unexpected error loading cache: {e}, rescanning fonts")
             self._scan_system_fonts()
 
     def list_fonts(self, filter_regex: Optional[str] = None) -> List[Tuple[str, Path]]:
@@ -167,5 +215,10 @@ class FontManager:
         try:
             if CACHE_FILE.exists():
                 CACHE_FILE.unlink()
-        except Exception:
-            pass
+                logger.info("Font cache cleared")
+        except (OSError, PermissionError) as e:
+            logger.error(f"Failed to clear font cache: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error clearing cache: {e}")
+            raise

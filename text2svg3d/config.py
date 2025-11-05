@@ -5,7 +5,21 @@ from typing import List
 
 # Default values
 DEFAULT_SIZE_MM: float = 20.0
-DEFAULT_OUTPUT_DIR: Path = Path.home() / "Bureau" / "ready to blender"
+
+# Output directory - use system-appropriate paths
+# Try Desktop first (most user-friendly), fallback to Documents
+_desktop = Path.home() / "Desktop" / "text2svg3d_output"
+_documents = Path.home() / "Documents" / "text2svg3d_output"
+_home = Path.home() / "text2svg3d_output"
+
+# Check which directory is most appropriate
+if (Path.home() / "Desktop").exists():
+    DEFAULT_OUTPUT_DIR: Path = _desktop
+elif (Path.home() / "Documents").exists():
+    DEFAULT_OUTPUT_DIR: Path = _documents
+else:
+    DEFAULT_OUTPUT_DIR: Path = _home
+
 DEFAULT_OUTPUT_FILE: str = str(DEFAULT_OUTPUT_DIR / "output.svg")
 DEFAULT_THICKNESS_MM: float = 2.0
 DEFAULT_LETTER_SPACING_MM: float = 0.0

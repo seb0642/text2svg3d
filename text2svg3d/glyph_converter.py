@@ -31,10 +31,37 @@ class GlyphConverter:
         Args:
             font_path: Path to the TrueType/OpenType font file
             size_mm: Desired text height in millimeters
+
+        Raises:
+            FileNotFoundError: If font file does not exist
+            ValueError: If size_mm is not in valid range (0.1 to 1000)
+            RuntimeError: If font file cannot be loaded
         """
+        # Validate font_path
+        if not isinstance(font_path, Path):
+            font_path = Path(font_path)
+
+        if not font_path.exists():
+            raise FileNotFoundError(f"Font file not found: {font_path}")
+
+        if not font_path.is_file():
+            raise ValueError(f"Path is not a file: {font_path}")
+
+        # Validate size_mm
+        if not isinstance(size_mm, (int, float)):
+            raise TypeError(f"size_mm must be numeric, got {type(size_mm).__name__}")
+
+        if not 0.1 <= size_mm <= 1000:
+            raise ValueError(f"size_mm must be between 0.1 and 1000, got {size_mm}")
+
         self.font_path = font_path
         self.size_mm = size_mm
-        self.face = freetype.Face(str(font_path))
+
+        # Try to load the font
+        try:
+            self.face = freetype.Face(str(font_path))
+        except Exception as e:
+            raise RuntimeError(f"Failed to load font file {font_path}: {e}") from e
 
         # Set character size (width=0 means auto, height in 1/64th points)
         # Convert mm to points: 1mm ≈ 2.83465 points

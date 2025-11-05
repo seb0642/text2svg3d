@@ -145,6 +145,43 @@ def main() -> int:
     Returns:
         Exit code
     """
+    # Validation functions for arguments
+    def validate_size(value: str) -> float:
+        """Validate size argument."""
+        try:
+            fvalue = float(value)
+            if not 0.1 <= fvalue <= 1000:
+                raise argparse.ArgumentTypeError(
+                    f"size must be between 0.1 and 1000, got {fvalue}"
+                )
+            return fvalue
+        except ValueError:
+            raise argparse.ArgumentTypeError(f"size must be a number, got '{value}'")
+
+    def validate_thickness(value: str) -> float:
+        """Validate thickness argument."""
+        try:
+            fvalue = float(value)
+            if not 0.1 <= fvalue <= 100:
+                raise argparse.ArgumentTypeError(
+                    f"thickness must be between 0.1 and 100, got {fvalue}"
+                )
+            return fvalue
+        except ValueError:
+            raise argparse.ArgumentTypeError(f"thickness must be a number, got '{value}'")
+
+    def validate_spacing(value: str) -> float:
+        """Validate letter spacing argument."""
+        try:
+            fvalue = float(value)
+            if not -10 <= fvalue <= 100:
+                raise argparse.ArgumentTypeError(
+                    f"letter-spacing must be between -10 and 100, got {fvalue}"
+                )
+            return fvalue
+        except ValueError:
+            raise argparse.ArgumentTypeError(f"letter-spacing must be a number, got '{value}'")
+
     parser = argparse.ArgumentParser(
         description="Convert text to SVG for 3D printing",
         prog="text2svg3d"
@@ -170,9 +207,9 @@ def main() -> int:
 
     parser.add_argument(
         "-s", "--size",
-        type=float,
+        type=validate_size,
         default=DEFAULT_SIZE_MM,
-        help=f"Text height in mm (default: {DEFAULT_SIZE_MM})"
+        help=f"Text height in mm (default: {DEFAULT_SIZE_MM}, range: 0.1-1000)"
     )
 
     parser.add_argument(
@@ -183,16 +220,16 @@ def main() -> int:
 
     parser.add_argument(
         "-t", "--thickness",
-        type=float,
+        type=validate_thickness,
         default=DEFAULT_THICKNESS_MM,
-        help=f"Suggested extrusion thickness in mm (default: {DEFAULT_THICKNESS_MM})"
+        help=f"Suggested extrusion thickness in mm (default: {DEFAULT_THICKNESS_MM}, range: 0.1-100)"
     )
 
     parser.add_argument(
         "-l", "--letter-spacing",
-        type=float,
+        type=validate_spacing,
         default=DEFAULT_LETTER_SPACING_MM,
-        help=f"Letter spacing in mm (default: {DEFAULT_LETTER_SPACING_MM})"
+        help=f"Letter spacing in mm (default: {DEFAULT_LETTER_SPACING_MM}, range: -10 to 100)"
     )
 
     parser.add_argument(

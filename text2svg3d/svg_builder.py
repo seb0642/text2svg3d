@@ -1,13 +1,18 @@
 """SVG document builder for 3D printing."""
 
+import logging
 from pathlib import Path
 from typing import List
 from xml.dom import minidom
+from xml.parsers.expat import ExpatError
 
 import svgwrite
 
 from .config import SVG_NAMESPACE, SVG_UNITS
 from .glyph_converter import GlyphOutline
+
+# Setup logging
+logger = logging.getLogger(__name__)
 
 
 class SVGBuilder:
@@ -344,6 +349,14 @@ class SVGBuilder:
             with open(output_path, 'w') as f:
                 f.write(dom.toprettyxml(indent="  ", encoding=None))
 
-        except Exception:
-            # If post-processing fails, keep original file
-            pass
+            logger.debug(f"Post-processed SVG file: {output_path}")
+
+        except (OSError, IOError, PermissionError) as e:
+            # File errors - log but keep original
+            logger.warning(f"Failed to post-process SVG {output_path}: {e}")
+        except ExpatError as e:
+            # XML parsing error - log but keep original
+            logger.warning(f"Failed to parse SVG for post-processing {output_path}: {e}")
+        except Exception as e:
+            # Unexpected error - log as error
+            logger.error(f"Unexpected error post-processing SVG {output_path}: {e}")
