@@ -99,7 +99,7 @@ class FontManager:
             CACHE_FILE.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
             cache_data = {
                 "version": "1.0",
-                "fonts": {name: str(path) for name, path in self.fonts.items()}
+                "fonts": {name: str(path) for name, path in self.fonts.items()},
             }
             with open(CACHE_FILE, "w") as f:
                 json.dump(cache_data, f, indent=2)
@@ -122,8 +122,7 @@ class FontManager:
                 if "version" in cache_data and "fonts" in cache_data:
                     if cache_data["version"] == "1.0":
                         self.fonts = {
-                            name: Path(path)
-                            for name, path in cache_data["fonts"].items()
+                            name: Path(path) for name, path in cache_data["fonts"].items()
                         }
                         logger.debug(f"Loaded {len(self.fonts)} fonts from cache")
                         return

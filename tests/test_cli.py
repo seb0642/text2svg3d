@@ -13,9 +13,7 @@ class TestCLI(unittest.TestCase):
     def run_cli(self, *args):
         """Run CLI command and return result."""
         cmd = [sys.executable, "-m", "text2svg3d"] + list(args)
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=30
-        )
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
         return result
 
     def test_help_option(self):
@@ -72,11 +70,7 @@ class TestCLI(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             output_file = Path(tmpdir) / "test.svg"
 
-            result = self.run_cli(
-                "-o", str(output_file),
-                "-s", "20",
-                "A"
-            )
+            result = self.run_cli("-o", str(output_file), "-s", "20", "A")
 
             # May fail if font not found, but should not crash
             if result.returncode == 0:
@@ -88,11 +82,7 @@ class TestCLI(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             output_file = Path(tmpdir) / "test.svg"
 
-            result = self.run_cli(
-                "-o", str(output_file),
-                "--preview",
-                "A"
-            )
+            result = self.run_cli("-o", str(output_file), "--preview", "A")
 
             # May fail if font not found
             if result.returncode == 0:

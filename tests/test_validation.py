@@ -1,9 +1,10 @@
 """Tests for input validation."""
 
-import pytest
 import tempfile
 import unittest
 from pathlib import Path
+
+import pytest
 
 
 class TestInputValidation(unittest.TestCase):
@@ -13,6 +14,7 @@ class TestInputValidation(unittest.TestCase):
         """Set up test fixtures."""
         try:
             from text2svg3d.glyph_converter import GlyphConverter
+
             self.GlyphConverter = GlyphConverter
             self.can_test = True
         except ImportError:

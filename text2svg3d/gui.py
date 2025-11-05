@@ -1,20 +1,22 @@
 """Graphical User Interface for text2svg3d using tkinter."""
 
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox, font as tkfont
 from pathlib import Path
+from tkinter import filedialog
+from tkinter import font as tkfont
+from tkinter import messagebox, ttk
 from typing import Optional
 
+from .config import (
+    DEFAULT_LETTER_SPACING_MM,
+    DEFAULT_OUTPUT_DIR,
+    DEFAULT_OUTPUT_FILE,
+    DEFAULT_SIZE_MM,
+    DEFAULT_THICKNESS_MM,
+)
 from .font_manager import FontManager
 from .glyph_converter import GlyphConverter
 from .svg_builder import SVGBuilder
-from .config import (
-    DEFAULT_SIZE_MM,
-    DEFAULT_THICKNESS_MM,
-    DEFAULT_LETTER_SPACING_MM,
-    DEFAULT_OUTPUT_FILE,
-    DEFAULT_OUTPUT_DIR,
-)
 
 
 class Text2SVG3D_GUI:
@@ -59,15 +61,15 @@ class Text2SVG3D_GUI:
         self._load_fonts()
 
         # Bind events
-        self.filter_var.trace('w', self._on_filter_changed)
-        self.text_var.trace('w', self._update_preview)
-        self.text_var.trace('w', self._update_visual_preview)
-        self.text_var.trace('w', self._update_output_filename)
-        self.font_var.trace('w', self._update_visual_preview)
-        self.size_var.trace('w', self._update_preview)
-        self.size_var.trace('w', self._update_visual_preview)
-        self.spacing_var.trace('w', self._update_preview)
-        self.spacing_var.trace('w', self._update_visual_preview)
+        self.filter_var.trace("w", self._on_filter_changed)
+        self.text_var.trace("w", self._update_preview)
+        self.text_var.trace("w", self._update_visual_preview)
+        self.text_var.trace("w", self._update_output_filename)
+        self.font_var.trace("w", self._update_visual_preview)
+        self.size_var.trace("w", self._update_preview)
+        self.size_var.trace("w", self._update_visual_preview)
+        self.spacing_var.trace("w", self._update_preview)
+        self.spacing_var.trace("w", self._update_visual_preview)
 
         # Initialize output filename with default text
         self._update_output_filename()
@@ -86,17 +88,17 @@ class Text2SVG3D_GUI:
         title = ttk.Label(
             main_frame,
             text="Convertisseur Texte vers SVG pour Impression 3D",
-            font=('Arial', 16, 'bold')
+            font=("Arial", 16, "bold"),
         )
         title.grid(row=row, column=0, columnspan=3, pady=(0, 10))
         row += 1
 
         # Text input
-        ttk.Label(main_frame, text="Texte à convertir :", font=('Arial', 10, 'bold')).grid(
+        ttk.Label(main_frame, text="Texte à convertir :", font=("Arial", 10, "bold")).grid(
             row=row, column=0, sticky=tk.W, pady=5
         )
         row += 1
-        text_entry = ttk.Entry(main_frame, textvariable=self.text_var, font=('Arial', 14))
+        text_entry = ttk.Entry(main_frame, textvariable=self.text_var, font=("Arial", 14))
         text_entry.grid(row=row, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 10))
         main_frame.columnconfigure(0, weight=1)
         row += 1
@@ -107,11 +109,7 @@ class Text2SVG3D_GUI:
         row += 1
 
         self.preview_canvas = tk.Canvas(
-            preview_visual_frame,
-            height=100,
-            bg='white',
-            relief=tk.SUNKEN,
-            borderwidth=2
+            preview_visual_frame, height=100, bg="white", relief=tk.SUNKEN, borderwidth=2
         )
         self.preview_canvas.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=5, pady=5)
         preview_visual_frame.columnconfigure(0, weight=1)
@@ -128,10 +126,7 @@ class Text2SVG3D_GUI:
 
         # Refresh button
         refresh_btn = ttk.Button(
-            font_frame,
-            text="🔄 Rafraîchir",
-            command=self._refresh_fonts,
-            width=12
+            font_frame, text="🔄 Rafraîchir", command=self._refresh_fonts, width=12
         )
         refresh_btn.grid(row=0, column=2, padx=5)
 
@@ -140,10 +135,7 @@ class Text2SVG3D_GUI:
         # Font dropdown
         ttk.Label(font_frame, text="Police :").grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
         self.font_combo = ttk.Combobox(
-            font_frame,
-            textvariable=self.font_var,
-            state='readonly',
-            width=40
+            font_frame, textvariable=self.font_var, state="readonly", width=40
         )
         self.font_combo.grid(row=1, column=1, sticky=(tk.W, tk.E), padx=5, pady=5)
 
@@ -153,24 +145,17 @@ class Text2SVG3D_GUI:
         row += 1
 
         # Size
-        ttk.Label(params_frame, text="Largeur du texte (mm) :").grid(row=0, column=0, sticky=tk.W, padx=5)
+        ttk.Label(params_frame, text="Largeur du texte (mm) :").grid(
+            row=0, column=0, sticky=tk.W, padx=5
+        )
         size_scale = ttk.Scale(
-            params_frame,
-            from_=5,
-            to=180,
-            variable=self.size_var,
-            orient=tk.HORIZONTAL
+            params_frame, from_=5, to=180, variable=self.size_var, orient=tk.HORIZONTAL
         )
         size_scale.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=5)
 
         # Spinbox for manual entry
         size_spinbox = ttk.Spinbox(
-            params_frame,
-            from_=5,
-            to=180,
-            textvariable=self.size_var,
-            width=8,
-            format="%.1f"
+            params_frame, from_=5, to=180, textvariable=self.size_var, width=8, format="%.1f"
         )
         size_spinbox.grid(row=0, column=2, padx=5)
         params_frame.columnconfigure(1, weight=1)
@@ -180,11 +165,7 @@ class Text2SVG3D_GUI:
             row=1, column=0, sticky=tk.W, padx=5, pady=5
         )
         spacing_scale = ttk.Scale(
-            params_frame,
-            from_=-5,
-            to=10,
-            variable=self.spacing_var,
-            orient=tk.HORIZONTAL
+            params_frame, from_=-5, to=10, variable=self.spacing_var, orient=tk.HORIZONTAL
         )
         spacing_scale.grid(row=1, column=1, sticky=(tk.W, tk.E), padx=5, pady=5)
 
@@ -196,7 +177,7 @@ class Text2SVG3D_GUI:
             textvariable=self.spacing_var,
             width=8,
             format="%.1f",
-            increment=0.5
+            increment=0.5,
         )
         spacing_spinbox.grid(row=1, column=2, padx=5, pady=5)
 
@@ -210,7 +191,7 @@ class Text2SVG3D_GUI:
             outline_frame,
             text="Générer un fichier de contour séparé",
             variable=self.enable_outline_var,
-            command=self._toggle_outline_options
+            command=self._toggle_outline_options,
         )
         outline_check.grid(row=0, column=0, columnspan=3, sticky=tk.W, padx=5, pady=5)
 
@@ -224,7 +205,7 @@ class Text2SVG3D_GUI:
             to=2.0,
             variable=self.outline_width_var,
             orient=tk.HORIZONTAL,
-            state='disabled'
+            state="disabled",
         )
         self.outline_scale.grid(row=1, column=1, sticky=(tk.W, tk.E), padx=5, pady=5)
 
@@ -237,7 +218,7 @@ class Text2SVG3D_GUI:
             width=8,
             format="%.1f",
             increment=0.1,
-            state='disabled'
+            state="disabled",
         )
         self.outline_spinbox.grid(row=1, column=2, padx=5, pady=5)
         outline_frame.columnconfigure(1, weight=1)
@@ -246,7 +227,7 @@ class Text2SVG3D_GUI:
         separate_check = ttk.Checkbutton(
             outline_frame,
             text="Séparer chaque lettre (un fichier par lettre pour multi-couleur)",
-            variable=self.separate_letters_var
+            variable=self.separate_letters_var,
         )
         separate_check.grid(row=2, column=0, columnspan=3, sticky=tk.W, padx=5, pady=(10, 5))
 
@@ -255,7 +236,9 @@ class Text2SVG3D_GUI:
         output_frame.grid(row=row, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=5)
         row += 1
 
-        ttk.Label(output_frame, text="Fichier de sortie :").grid(row=0, column=0, sticky=tk.W, padx=5)
+        ttk.Label(output_frame, text="Fichier de sortie :").grid(
+            row=0, column=0, sticky=tk.W, padx=5
+        )
         output_entry = ttk.Entry(output_frame, textvariable=self.output_var)
         output_entry.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=5)
         output_frame.columnconfigure(1, weight=1)
@@ -269,19 +252,13 @@ class Text2SVG3D_GUI:
         row += 1
 
         preview_label = ttk.Label(
-            preview_frame,
-            textvariable=self.preview_var,
-            font=('Courier', 10),
-            justify=tk.LEFT
+            preview_frame, textvariable=self.preview_var, font=("Courier", 10), justify=tk.LEFT
         )
         preview_label.grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
 
         # Generate button
         generate_btn = ttk.Button(
-            main_frame,
-            text="Générer le SVG",
-            command=self._generate_svg,
-            style='Accent.TButton'
+            main_frame, text="Générer le SVG", command=self._generate_svg, style="Accent.TButton"
         )
         generate_btn.grid(row=row, column=0, columnspan=3, pady=10, sticky=(tk.W, tk.E))
         row += 1
@@ -296,11 +273,11 @@ class Text2SVG3D_GUI:
     def _toggle_outline_options(self) -> None:
         """Enable or disable outline options based on checkbox."""
         if self.enable_outline_var.get():
-            self.outline_scale.config(state='normal')
-            self.outline_spinbox.config(state='normal')
+            self.outline_scale.config(state="normal")
+            self.outline_spinbox.config(state="normal")
         else:
-            self.outline_scale.config(state='disabled')
-            self.outline_spinbox.config(state='disabled')
+            self.outline_scale.config(state="disabled")
+            self.outline_spinbox.config(state="disabled")
 
     def _ensure_output_directory(self) -> None:
         """Ensure the output directory exists."""
@@ -309,6 +286,7 @@ class Text2SVG3D_GUI:
         except Exception as e:
             # If we can't create the directory, use current directory instead
             import os
+
             fallback_path = os.path.join(os.getcwd(), "output.svg")
             self.output_var.set(fallback_path)
             print(f"Warning: Could not create output directory {DEFAULT_OUTPUT_DIR}: {e}")
@@ -325,7 +303,7 @@ class Text2SVG3D_GUI:
             messagebox.showwarning(
                 "Aucune Police Trouvée",
                 "Aucune police trouvée sur votre système.\n\n"
-                "Veuillez installer des polices TrueType ou OpenType."
+                "Veuillez installer des polices TrueType ou OpenType.",
             )
             self.status_var.set("Aucune police trouvée")
             return
@@ -340,7 +318,7 @@ class Text2SVG3D_GUI:
             "Rafraîchir les polices",
             "Cela va rescanner toutes les polices installées.\n\n"
             "Utile si vous venez d'installer une nouvelle police.\n\n"
-            "Continuer ?"
+            "Continuer ?",
         ):
             return
 
@@ -363,7 +341,7 @@ class Text2SVG3D_GUI:
         messagebox.showinfo(
             "Polices rafraîchies",
             f"✅ {len(self.all_fonts)} polices trouvées !\n\n"
-            "Les nouvelles polices installées sont maintenant disponibles."
+            "Les nouvelles polices installées sont maintenant disponibles.",
         )
 
         self.status_var.set("Polices rafraîchies")
@@ -380,7 +358,7 @@ class Text2SVG3D_GUI:
     def _update_font_list(self) -> None:
         """Update the font dropdown with filtered fonts."""
         font_names = [name for name, _ in self.filtered_fonts]
-        self.font_combo['values'] = font_names
+        self.font_combo["values"] = font_names
 
     def _on_filter_changed(self, *args) -> None:
         """Handle font filter changes."""
@@ -396,7 +374,9 @@ class Text2SVG3D_GUI:
         # Update status
         self.status_var.set(f"Affichage de {len(self.filtered_fonts)} police(s)")
 
-    def _calculate_font_size_for_width(self, font_path: Path, text: str, target_width: float, spacing: float) -> tuple[float, float]:
+    def _calculate_font_size_for_width(
+        self, font_path: Path, text: str, target_width: float, spacing: float
+    ) -> tuple[float, float]:
         """
         Calculate the font size needed to achieve a target width.
 
@@ -452,10 +432,12 @@ class Text2SVG3D_GUI:
                 spacing = DEFAULT_LETTER_SPACING_MM
 
             # Calculate font size to achieve target width
-            font_size, height = self._calculate_font_size_for_width(font_path, text, target_width, spacing)
+            font_size, height = self._calculate_font_size_for_width(
+                font_path, text, target_width, spacing
+            )
 
             preview_text = (
-                f"Texte : \"{text}\"\n"
+                f'Texte : "{text}"\n'
                 f"Police : {font_name}\n"
                 f"Largeur finale : {target_width:.1f}mm\n"
                 f"Hauteur finale : {height:.2f}mm\n"
@@ -483,10 +465,10 @@ class Text2SVG3D_GUI:
             # Replace invalid filename characters
             invalid_chars = '<>:"/\\|?*'
             for char in invalid_chars:
-                safe_text = safe_text.replace(char, '_')
+                safe_text = safe_text.replace(char, "_")
 
             # Replace spaces with underscores
-            safe_text = safe_text.replace(' ', '_')
+            safe_text = safe_text.replace(" ", "_")
 
             # Limit length to avoid too long filenames
             if len(safe_text) > 50:
@@ -512,22 +494,24 @@ class Text2SVG3D_GUI:
         if not text:
             # Display placeholder text
             self.preview_canvas.create_text(
-                10, 50,
+                10,
+                50,
                 text="Entrez du texte pour voir l'aperçu...",
                 anchor=tk.W,
-                font=('Arial', 12),
-                fill='gray'
+                font=("Arial", 12),
+                fill="gray",
             )
             return
 
         font_name = self.font_var.get()
         if not font_name:
             self.preview_canvas.create_text(
-                10, 50,
+                10,
+                50,
                 text="Sélectionnez une police...",
                 anchor=tk.W,
-                font=('Arial', 12),
-                fill='gray'
+                font=("Arial", 12),
+                fill="gray",
             )
             return
 
@@ -550,7 +534,7 @@ class Text2SVG3D_GUI:
 
             # If no match found, use a default but show the font name
             if not tk_font_name:
-                tk_font_name = 'TkDefaultFont'
+                tk_font_name = "TkDefaultFont"
 
             # Calculate font size for preview based on target width
             # Use target width directly for consistent scaling
@@ -588,11 +572,7 @@ class Text2SVG3D_GUI:
             current_x = x_start
             for i, char in enumerate(text):
                 self.preview_canvas.create_text(
-                    current_x, y_pos,
-                    text=char,
-                    font=display_font,
-                    fill='black',
-                    anchor=tk.W
+                    current_x, y_pos, text=char, font=display_font, fill="black", anchor=tk.W
                 )
                 current_x += char_widths[i] + spacing_pixels
 
@@ -601,31 +581,29 @@ class Text2SVG3D_GUI:
                     # Petite ligne verticale pour visualiser l'espacement
                     line_x = current_x - spacing_pixels // 2
                     self.preview_canvas.create_line(
-                        line_x, y_pos - 5,
-                        line_x, y_pos + 5,
-                        fill='lightblue',
-                        width=1,
-                        dash=(2, 2)
+                        line_x, y_pos - 5, line_x, y_pos + 5, fill="lightblue", width=1, dash=(2, 2)
                     )
 
             # Add font name below if using fallback
-            if tk_font_name == 'TkDefaultFont':
+            if tk_font_name == "TkDefaultFont":
                 self.preview_canvas.create_text(
-                    x_pos, 85,
+                    x_pos,
+                    85,
                     text=f"(Aperçu approximatif - police finale: {font_name})",
-                    font=('Arial', 8),
-                    fill='gray',
-                    anchor=tk.CENTER
+                    font=("Arial", 8),
+                    fill="gray",
+                    anchor=tk.CENTER,
                 )
 
         except Exception as e:
             # If anything fails, show error message
             self.preview_canvas.create_text(
-                10, 50,
+                10,
+                50,
                 text=f"Erreur d'aperçu: {str(e)}",
                 anchor=tk.W,
-                font=('Arial', 10),
-                fill='red'
+                font=("Arial", 10),
+                fill="red",
             )
 
     def _browse_output(self) -> None:
@@ -643,7 +621,7 @@ class Text2SVG3D_GUI:
             defaultextension=".svg",
             filetypes=[("SVG files", "*.svg"), ("All files", "*.*")],
             initialdir=initial_dir,
-            initialfile=initial_file
+            initialfile=initial_file,
         )
 
         if filename:
@@ -678,7 +656,9 @@ class Text2SVG3D_GUI:
             thickness = DEFAULT_THICKNESS_MM  # Valeur par défaut (juste pour métadonnées)
 
             # Calculate font size to achieve target width
-            font_size, height = self._calculate_font_size_for_width(font_path, text, target_width, spacing)
+            font_size, height = self._calculate_font_size_for_width(
+                font_path, text, target_width, spacing
+            )
 
             converter = GlyphConverter(font_path, font_size)
             outlines = converter.convert_text(text, spacing)
@@ -691,10 +671,7 @@ class Text2SVG3D_GUI:
 
             # Build SVG
             builder = SVGBuilder(
-                text=text,
-                font_name=font_name,
-                size_mm=font_size,
-                thickness_mm=thickness
+                text=text, font_name=font_name, size_mm=font_size, thickness_mm=thickness
             )
 
             files_created = []
@@ -711,15 +688,20 @@ class Text2SVG3D_GUI:
 
                     for file_path in files_created:
                         file_path_obj = Path(file_path)
-                        outline_path = file_path_obj.parent / f"{file_path_obj.stem}_contour{file_path_obj.suffix}"
+                        outline_path = (
+                            file_path_obj.parent
+                            / f"{file_path_obj.stem}_contour{file_path_obj.suffix}"
+                        )
 
                         # Build outline for this letter
                         # Get the letter index from the filename
-                        letter_idx = int(file_path_obj.stem.split('_')[2]) - 1
+                        letter_idx = int(file_path_obj.stem.split("_")[2]) - 1
                         letter_outline = [outlines[letter_idx]]
                         letter_width = outlines[letter_idx].advance_width
 
-                        builder.build_svg_with_outline(letter_outline, outline_path, letter_width, height, outline_width)
+                        builder.build_svg_with_outline(
+                            letter_outline, outline_path, letter_width, height, outline_width
+                        )
                         outline_files.append(str(outline_path))
 
                     files_created.extend(outline_files)
@@ -731,8 +713,12 @@ class Text2SVG3D_GUI:
                 # Generate outline file if option is enabled
                 if self.enable_outline_var.get():
                     outline_width = self.outline_width_var.get()
-                    outline_path = output_path.parent / f"{output_path.stem}_contour{output_path.suffix}"
-                    builder.build_svg_with_outline(outlines, outline_path, width, height, outline_width)
+                    outline_path = (
+                        output_path.parent / f"{output_path.stem}_contour{output_path.suffix}"
+                    )
+                    builder.build_svg_with_outline(
+                        outlines, outline_path, width, height, outline_width
+                    )
                     files_created.append(str(outline_path))
 
             # Success message
@@ -744,7 +730,7 @@ class Text2SVG3D_GUI:
                         f"{len(files_created)} fichiers créés :\n"
                         f"- {num_letters} fichiers de lettres\n"
                         f"- {num_letters} fichiers de contour\n\n"
-                        f"Texte : \"{text}\"\n"
+                        f'Texte : "{text}"\n'
                         f"Dimensions : {width:.2f}mm × {height:.2f}mm\n"
                         f"Épaisseur contour : {outline_width:.1f}mm\n\n"
                         f"Dans votre slicer 3D :\n"
@@ -756,7 +742,7 @@ class Text2SVG3D_GUI:
                     message = (
                         f"Fichiers SVG créés avec succès !\n\n"
                         f"{len(files_created)} fichiers de lettres créés\n"
-                        f"Texte : \"{text}\"\n"
+                        f'Texte : "{text}"\n'
                         f"Dimensions : {width:.2f}mm × {height:.2f}mm\n\n"
                         f"Dans votre slicer 3D :\n"
                         f"Importez chaque fichier avec une couleur différente\n"
@@ -808,7 +794,7 @@ def main() -> None:
     height = root.winfo_height()
     x = (root.winfo_screenwidth() // 2) - (width // 2)
     y = (root.winfo_screenheight() // 2) - (height // 2)
-    root.geometry(f'{width}x{height}+{x}+{y}')
+    root.geometry(f"{width}x{height}+{x}+{y}")
 
     # Run
     root.mainloop()

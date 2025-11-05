@@ -10,12 +10,14 @@ from .config import DEFAULT_COORDINATE_PRECISION, DPI
 
 class Point(NamedTuple):
     """2D point with x, y coordinates."""
+
     x: float
     y: float
 
 
 class GlyphOutline(NamedTuple):
     """Outline data for a single glyph."""
+
     path_data: str
     advance_width: float
     char: str
@@ -78,11 +80,7 @@ class GlyphConverter:
         # Total height from ascender to descender
         self.total_height_mm = self.ascender_mm - self.descender_mm  # descender is negative
 
-    def convert_text(
-        self,
-        text: str,
-        letter_spacing_mm: float = 0.0
-    ) -> List[GlyphOutline]:
+    def convert_text(self, text: str, letter_spacing_mm: float = 0.0) -> List[GlyphOutline]:
         """
         Convert text string to list of glyph outlines.
 
@@ -103,7 +101,7 @@ class GlyphConverter:
                     outline = GlyphOutline(
                         path_data=outline.path_data,
                         advance_width=outline.advance_width + letter_spacing_mm,
-                        char=outline.char
+                        char=outline.char,
                     )
                     outlines.append(outline)
             except Exception:
@@ -138,11 +136,7 @@ class GlyphConverter:
         # Get advance width in mm (already in font units with NO_SCALE)
         advance_mm = self._font_units_to_mm(self.face.glyph.advance.x)
 
-        return GlyphOutline(
-            path_data=path_data,
-            advance_width=advance_mm,
-            char=char
-        )
+        return GlyphOutline(path_data=path_data, advance_width=advance_mm, char=char)
 
     def _outline_to_svg_path(self, outline) -> str:
         """
@@ -163,12 +157,10 @@ class GlyphConverter:
 
         for contour_end in contours:
             # Process each contour (closed path)
-            contour_points = points[start:contour_end + 1]
-            contour_tags = tags[start:contour_end + 1]
+            contour_points = points[start : contour_end + 1]
+            contour_tags = tags[start : contour_end + 1]
 
-            path_parts.append(
-                self._contour_to_svg_path(contour_points, contour_tags)
-            )
+            path_parts.append(self._contour_to_svg_path(contour_points, contour_tags))
 
             start = contour_end + 1
 
@@ -194,7 +186,9 @@ class GlyphConverter:
 
         # Start point
         start_point = self._point_to_mm(points[0])
-        path_commands.append(f"M {start_point.x:.{DEFAULT_COORDINATE_PRECISION}f} {start_point.y:.{DEFAULT_COORDINATE_PRECISION}f}")
+        path_commands.append(
+            f"M {start_point.x:.{DEFAULT_COORDINATE_PRECISION}f} {start_point.y:.{DEFAULT_COORDINATE_PRECISION}f}"
+        )
 
         i = 1
         while i < n:
